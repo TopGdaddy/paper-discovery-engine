@@ -1,14 +1,11 @@
 """
-run_pipeline.py - Main script to run the complete pipeline
-
-This fetches papers from arXiv and stores them in the database.
-Run this daily to get new papers!
+run_pipeline.py - Main pipeline with proper rate limiting
 """
 
 import sys
 import os
+import time
 
-# Add src to path so imports work
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from scraper import ArXivScraper
@@ -22,49 +19,57 @@ def main():
     print("🚀 PAPER DISCOVERY ENGINE - Daily Pipeline")
     print("=" * 80)
     
-    # Initialize components
+    # Initialize
     scraper = ArXivScraper(max_results=20)
     db = DatabaseManager("data/papers.db")
     
-    # Categories to fetch
+    # Categories to fetch (fewer to avoid rate limits)
     categories = ["cs.AI", "cs.LG", "cs.CL"]
     
     total_added = 0
     total_skipped = 0
     
-    # Fetch from each category
-    for category in categories:
+    for i, category in enumerate(categories):
         print(f"\n{'─' * 40}")
-        papers = scraper.get_latest_papers(category=category, count=15)
+        print(f"📂 Category {i+1}/{len(categories)}: {category}")
+        print(f"{'─' * 40}")
+        
+        # Fetch papers (scraper handles rate limiting internally)
+        papers = scraper.get_latest_papers(category=category, count=10)
         
         if papers:
             result = db.add_papers(papers)
             total_added += result['added']
             total_skipped += result['skipped']
+        else:
+            print("   ⚠️ No papers fetched (might be rate limited)")
     
-    # Show results
+    # Results
     print("\n" + "=" * 80)
     print("📊 PIPELINE RESULTS")
     print("=" * 80)
     
     print(f"\n   📥 New papers added: {total_added}")
     print(f"   ⏭️  Duplicates skipped: {total_skipped}")
+    print(f"   🔢 Total API requests: {scraper.get_request_count()}")
     
     stats = db.get_stats()
     print(f"\n   📁 Total in database: {stats['total_papers']}")
     print(f"   🏷️  Labeled: {stats['labeled_papers']}")
-    print(f"   📂 Categories: {', '.join(stats['categories'])}")
     
-    # Show 5 newest papers
+    if stats['categories']:
+        print(f"   📂 Categories: {', '.join(stats['categories'])}")
+    
+    # Show newest papers
     print("\n📚 NEWEST PAPERS:")
     print("─" * 80)
     
     recent = db.get_all_papers(limit=5)
     for i, paper in enumerate(recent, 1):
-        print(f"\n{i}. {paper.title[:70]}...")
+        title = paper.title[:65] + "..." if len(paper.title) > 65 else paper.title
+        print(f"\n{i}. {title}")
         print(f"   🆔 {paper.arxiv_id}")
         print(f"   📂 {paper.primary_category}")
-        print(f"   🔗 {paper.abs_url}")
     
     db.close()
     
