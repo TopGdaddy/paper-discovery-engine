@@ -1,616 +1,470 @@
 """
-database.py - Store papers in SQLite database using SQLAlchemy ORM
-
-WHY DATABASE INSTEAD OF JSON FILES?
-===================================
-1. No duplicates - database rejects papers with same arxiv_id
-2. Fast search - SQL queries are optimized
-3. Easy updates - change one paper without rewriting everything
-4. Scales better - handles 100,000+ papers easily
-5. Built-in filtering - get papers by category, date, score, etc.
-
-CONCEPTS YOU'LL LEARN:
-======================
-- ORM (Object-Relational Mapping): Python objects ↔ database rows
-- SQLAlchemy: Most popular Python database toolkit
-- CRUD: Create, Read, Update, Delete operations
-- Sessions: How databases manage transactions
+database.py - Enhanced Database with Full Auto-Migration
 """
 
-import os
-from datetime import datetime
-from typing import List, Dict, Optional
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, Boolean, desc
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Boolean, text, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timedelta
+import json
 
-
-# =============================================================================
-# SETUP
-# =============================================================================
-
-# Base class for all database models
-# Think of it as the "parent" that all tables inherit from
 Base = declarative_base()
 
 
-# =============================================================================
-# PAPER MODEL (This defines the database table structure)
-# =============================================================================
-
 class PaperRecord(Base):
-    """
-    Database table for storing papers.
-    
-    HOW THIS WORKS:
-    ===============
-    - This Python class = one database table called 'papers'
-    - Each class attribute (like 'title') = one column in the table
-    - Each instance of this class = one row in the table
-    
-    COLUMN TYPES:
-    =============
-    - Integer: Whole numbers (id, counts)
-    - String(N): Text up to N characters
-    - Text: Unlimited text (for long content like abstracts)
-    - DateTime: Date and time
-    - Float: Decimal numbers (for scores like 0.85)
-    - Boolean: True/False
-    
-    SPECIAL ATTRIBUTES:
-    ===================
-    - primary_key=True: Unique identifier, auto-increments (1, 2, 3...)
-    - unique=True: No two rows can have the same value
-    - nullable=False: This field is required (can't be empty)
-    - index=True: Makes searching this column MUCH faster
-    - default=X: If not provided, use X as the value
-    """
-    
-    # Table name in the database
+    """Research paper record"""
     __tablename__ = 'papers'
     
-    # -------------------------------------------------------------------------
-    # PRIMARY KEY - Every table needs one unique identifier
-    # -------------------------------------------------------------------------
     id = Column(Integer, primary_key=True, autoincrement=True)
-    
-    # -------------------------------------------------------------------------
-    # PAPER INFO - Matches your scraper.py field names exactly!
-    # -------------------------------------------------------------------------
     arxiv_id = Column(String(50), unique=True, nullable=False, index=True)
     title = Column(Text, nullable=False)
-    summary = Column(Text)  # The abstract
-    authors = Column(Text)  # Stored as comma-separated string
-    published = Column(DateTime, index=True)  # Indexed for date sorting
-    primary_category = Column(String(50), index=True)
+    authors = Column(Text)
+    summary = Column(Text)
     pdf_url = Column(String(500))
     abs_url = Column(String(500))
+    primary_category = Column(String(50), index=True)
+    published = Column(DateTime, index=True)
+    relevance_score = Column(Float, default=0.0, index=True)
     
-    # -------------------------------------------------------------------------
-    # OUR CUSTOM FIELDS - For ML and user tracking
-    # -------------------------------------------------------------------------
-    # Relevance score from ML classifier (0.0 to 1.0)
-    relevance_score = Column(Float, default=0.0)
-    
-    # User labels for training: 1=relevant, 0=not relevant, None=not labeled yet
+    # New fields - will be migrated
+    fetched_at = Column(DateTime, nullable=True)
     user_label = Column(Integer, nullable=True)
+    labeled_at = Column(DateTime, nullable=True)
+    is_saved = Column(Boolean, default=False)
+    saved_at = Column(DateTime, nullable=True)
+    user_score = Column(Float, nullable=True)
     
-    # Tracking
-    is_read = Column(Boolean, default=False)
-    is_favorite = Column(Boolean, default=False)
-    notes = Column(Text, nullable=True)
-    
-    # When we downloaded it (auto-set)
-    downloaded_at = Column(DateTime, default=datetime.now)
-    
-    def __repr__(self):
-        """What you see when you print a PaperRecord object."""
-        return f"<Paper {self.arxiv_id}: {self.title[:40]}...>"
-    
-    def to_dict(self) -> Dict:
-        """
-        Convert database record back to dictionary.
-        Useful for displaying or passing to other functions.
-        """
+    def to_dict(self):
         return {
-            'id': self.id,
             'arxiv_id': self.arxiv_id,
             'title': self.title,
+            'authors': self.authors,
             'summary': self.summary,
-            'authors': self.authors.split(', ') if self.authors else [],
-            'published': self.published,
-            'primary_category': self.primary_category,
             'pdf_url': self.pdf_url,
             'abs_url': self.abs_url,
+            'primary_category': self.primary_category,
+            'published': self.published.isoformat() if self.published else None,
             'relevance_score': self.relevance_score,
             'user_label': self.user_label,
-            'is_read': self.is_read,
-            'is_favorite': self.is_favorite,
-            'notes': self.notes,
-            'downloaded_at': self.downloaded_at,
+            'is_saved': self.is_saved,
+            'user_score': self.user_score
         }
 
 
-# =============================================================================
-# DATABASE MANAGER CLASS
-# =============================================================================
+class UserPreferences(Base):
+    """User preferences for email digest"""
+    __tablename__ = 'user_preferences'
+    
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), nullable=True)
+    email_verified = Column(Boolean, default=False)
+    digest_enabled = Column(Boolean, default=False)
+    digest_frequency = Column(String(20), default='weekly')
+    digest_day = Column(Integer, default=0)
+    digest_hour = Column(Integer, default=8)
+    tracked_categories = Column(Text, default='[]')
+    tracked_keywords = Column(Text, default='[]')
+    min_relevance_score = Column(Float, default=0.5)
+    max_papers_per_digest = Column(Integer, default=10)
+    notify_high_relevance = Column(Boolean, default=True)
+    auto_train = Column(Boolean, default=True)
+    model_last_trained = Column(DateTime, nullable=True)
+    model_accuracy = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    smtp_host = Column(String(255), default='smtp.gmail.com')
+    smtp_port = Column(Integer, default=587)
+    smtp_user = Column(String(255), nullable=True)
+    smtp_password = Column(String(255), nullable=True)
+    
+    def get_tracked_categories(self):
+        try:
+            return json.loads(self.tracked_categories or '[]')
+        except:
+            return []
+    
+    def set_tracked_categories(self, categories):
+        self.tracked_categories = json.dumps(categories)
+    
+    def get_tracked_keywords(self):
+        try:
+            return json.loads(self.tracked_keywords or '[]')
+        except:
+            return []
+    
+    def set_tracked_keywords(self, keywords):
+        self.tracked_keywords = json.dumps(keywords)
+
+
+class DigestHistory(Base):
+    """Track sent digests"""
+    __tablename__ = 'digest_history'
+    
+    id = Column(Integer, primary_key=True)
+    sent_at = Column(DateTime, default=datetime.utcnow, index=True)
+    paper_ids = Column(Text)
+    paper_count = Column(Integer)
+    digest_type = Column(String(20))
+    status = Column(String(20), default='sent')
+    
+    def get_paper_ids(self):
+        try:
+            return json.loads(self.paper_ids or '[]')
+        except:
+            return []
+
+
+class MLModelState(Base):
+    """Store ML model state"""
+    __tablename__ = 'ml_model_state'
+    
+    id = Column(Integer, primary_key=True)
+    model_type = Column(String(50), default='tfidf_logreg')
+    model_blob = Column(Text)
+    vectorizer_blob = Column(Text)
+    trained_at = Column(DateTime)
+    training_samples = Column(Integer)
+    accuracy = Column(Float)
+    precision_score = Column(Float)
+    recall_score = Column(Float)
+    f1_score = Column(Float)
+    top_positive_features = Column(Text)
+    top_negative_features = Column(Text)
+    is_active = Column(Boolean, default=True)
+
 
 class DatabaseManager:
-    """
-    Handles all database operations.
-    
-    WHY A CLASS?
-    ============
-    - Keeps all database logic in one place
-    - Manages the connection/session
-    - Provides clean methods like db.add_paper(), db.search()
-    - Easy to test and maintain
-    
-    USAGE:
-    ======
-        db = DatabaseManager()
-        db.add_paper(paper_dict)
-        papers = db.get_all_papers()
-        db.close()
-    """
-    
-    def __init__(self, db_path: str = "data/papers.db"):
-        """
-        Initialize database connection.
-        
-        Args:
-            db_path: Where to store the SQLite file
-        """
-        # Create data directory if it doesn't exist
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        
-        # Create database engine
-        # sqlite:/// means SQLite database
-        # echo=False means don't print every SQL query (set True to debug)
+    def __init__(self, db_path: str):
         self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
         
-        # Create all tables defined above (if they don't exist)
+        # First migrate the papers table BEFORE creating models
+        self._migrate_papers_table()
+        
+        # Now create all tables
         Base.metadata.create_all(self.engine)
         
-        # Create session factory and session
-        # Session = our "connection" to talk to the database
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
         
-        self.db_path = db_path
-        print(f"📁 Database initialized: {os.path.abspath(db_path)}")
+        # Ensure user preferences exist
+        self._ensure_preferences()
     
-    # =========================================================================
-    # CREATE OPERATIONS
-    # =========================================================================
-    
-    def add_paper(self, paper_dict: Dict) -> Optional[PaperRecord]:
-        """
-        Add a single paper to the database.
-        
-        WHAT HAPPENS:
-        1. Check if paper with same arxiv_id exists
-        2. If exists, skip it (return existing)
-        3. If new, create record and save
-        
-        Args:
-            paper_dict: Dictionary from your scraper (ArXivScraper)
-            
-        Returns:
-            PaperRecord object, or None if error
-        """
+    def _get_existing_columns(self, table_name):
+        """Get list of existing columns in a table"""
         try:
-            # Check for duplicate
-            existing = self.session.query(PaperRecord).filter_by(
-                arxiv_id=paper_dict['arxiv_id']
-            ).first()
-            
-            if existing:
-                # Already have this paper
-                return existing
-            
-            # Convert authors list to comma-separated string
-            authors = paper_dict.get('authors', [])
-            if isinstance(authors, list):
-                authors = ', '.join(authors)
-            
-            # Create new record
-            paper = PaperRecord(
-                arxiv_id=paper_dict['arxiv_id'],
-                title=paper_dict['title'],
-                summary=paper_dict.get('summary', ''),
-                authors=authors,
-                published=paper_dict.get('published'),
-                primary_category=paper_dict.get('primary_category', ''),
-                pdf_url=paper_dict.get('pdf_url', ''),
-                abs_url=paper_dict.get('abs_url', ''),
-            )
-            
-            # Add to session and save
-            self.session.add(paper)
-            self.session.commit()
-            
-            return paper
-            
-        except Exception as e:
-            # If anything goes wrong, undo changes
-            self.session.rollback()
-            print(f"❌ Error adding paper: {e}")
-            return None
+            inspector = inspect(self.engine)
+            columns = inspector.get_columns(table_name)
+            return [col['name'] for col in columns]
+        except:
+            return []
     
-    def add_papers(self, papers_list: List[Dict]) -> Dict[str, int]:
-        """
-        Add multiple papers at once.
+    def _migrate_papers_table(self):
+        """Add missing columns to existing papers table"""
+        existing_cols = self._get_existing_columns('papers')
         
-        Args:
-            papers_list: List of paper dictionaries from scraper
-            
-        Returns:
-            Dictionary with counts: {'added': X, 'skipped': Y}
-        """
-        added = 0
-        skipped = 0
+        if not existing_cols:
+            # Table doesn't exist yet, will be created by create_all
+            return
         
-        for paper_dict in papers_list:
-            # Check if exists
-            existing = self.session.query(PaperRecord).filter_by(
-                arxiv_id=paper_dict['arxiv_id']
-            ).first()
-            
-            if existing:
-                skipped += 1
-                continue
-            
-            # Convert authors
-            authors = paper_dict.get('authors', [])
-            if isinstance(authors, list):
-                authors = ', '.join(authors)
-            
-            # Create record
-            paper = PaperRecord(
-                arxiv_id=paper_dict['arxiv_id'],
-                title=paper_dict['title'],
-                summary=paper_dict.get('summary', ''),
-                authors=authors,
-                published=paper_dict.get('published'),
-                primary_category=paper_dict.get('primary_category', ''),
-                pdf_url=paper_dict.get('pdf_url', ''),
-                abs_url=paper_dict.get('abs_url', ''),
-            )
-            
-            self.session.add(paper)
-            added += 1
+        # Columns to add if missing
+        columns_to_add = {
+            "fetched_at": "DATETIME",
+            "user_label": "INTEGER",
+            "labeled_at": "DATETIME",
+            "is_saved": "INTEGER DEFAULT 0",
+            "saved_at": "DATETIME",
+            "user_score": "REAL",
+        }
         
-        # Commit all at once (much faster than one at a time!)
-        try:
+        with self.engine.connect() as conn:
+            for col_name, col_type in columns_to_add.items():
+                if col_name not in existing_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE papers ADD COLUMN {col_name} {col_type}"))
+                        conn.commit()
+                        print(f"✅ Added column: {col_name}")
+                    except Exception as e:
+                        print(f"Column {col_name} might already exist: {e}")
+    
+    def _ensure_preferences(self):
+        prefs = self.session.query(UserPreferences).first()
+        if not prefs:
+            prefs = UserPreferences()
+            self.session.add(prefs)
             self.session.commit()
-            print(f"✅ Added {added} papers, skipped {skipped} duplicates")
-        except Exception as e:
-            self.session.rollback()
-            print(f"❌ Error in bulk add: {e}")
-            return {'added': 0, 'skipped': 0}
-        
-        return {'added': added, 'skipped': skipped}
     
     # =========================================================================
-    # READ OPERATIONS
+    # PAPER OPERATIONS
     # =========================================================================
     
-    def get_paper(self, arxiv_id: str) -> Optional[PaperRecord]:
-        """Get a single paper by its arXiv ID."""
+    def get_all_papers(self, limit=1000):
+        return self.session.query(PaperRecord).order_by(
+            PaperRecord.relevance_score.desc()
+        ).limit(limit).all()
+    
+    def get_paper_by_id(self, arxiv_id: str):
         return self.session.query(PaperRecord).filter_by(arxiv_id=arxiv_id).first()
     
-    def get_all_papers(self, limit: int = 100) -> List[PaperRecord]:
-        """
-        Get all papers, sorted by published date (newest first).
-        
-        Args:
-            limit: Maximum number to return (default 100)
-        """
-        return self.session.query(PaperRecord)\
-            .order_by(desc(PaperRecord.published))\
-            .limit(limit)\
-            .all()
+    def save_paper(self, paper: PaperRecord):
+        existing = self.get_paper_by_id(paper.arxiv_id)
+        if existing:
+            return existing
+        self.session.add(paper)
+        self.session.commit()
+        return paper
     
-    def search_papers(
-        self,
-        keyword: str = None,
-        category: str = None,
-        min_score: float = None,
-        limit: int = 50
-    ) -> List[PaperRecord]:
-        """
-        Search papers with filters.
-        
-        Args:
-            keyword: Search in title and summary
-            category: Filter by primary_category (e.g., "cs.AI")
-            min_score: Minimum relevance score
-            limit: Max results
-            
-        Returns:
-            List of matching PaperRecord objects
-        """
-        query = self.session.query(PaperRecord)
-        
-        # Apply filters
-        if keyword:
-            pattern = f"%{keyword}%"
-            query = query.filter(
-                (PaperRecord.title.like(pattern)) |
-                (PaperRecord.summary.like(pattern))
-            )
-        
-        if category:
-            query = query.filter(PaperRecord.primary_category == category)
-        
-        if min_score is not None:
-            query = query.filter(PaperRecord.relevance_score >= min_score)
-        
-        # Order by newest first
-        query = query.order_by(desc(PaperRecord.published))
-        
-        return query.limit(limit).all()
-    
-    def get_unlabeled_papers(self, limit: int = 20) -> List[PaperRecord]:
-        """Get papers that haven't been labeled yet (for training data)."""
-        return self.session.query(PaperRecord)\
-            .filter(PaperRecord.user_label.is_(None))\
-            .order_by(desc(PaperRecord.published))\
-            .limit(limit)\
-            .all()
-    
-    def get_labeled_papers(self) -> List[PaperRecord]:
-        """Get all labeled papers (for training the classifier)."""
-        return self.session.query(PaperRecord)\
-            .filter(PaperRecord.user_label.isnot(None))\
-            .all()
-    
-    def get_top_papers(self, limit: int = 10, min_score: float = 0.5) -> List[PaperRecord]:
-        """Get highest-scored papers."""
-        return self.session.query(PaperRecord)\
-            .filter(PaperRecord.relevance_score >= min_score)\
-            .order_by(desc(PaperRecord.relevance_score))\
-            .limit(limit)\
-            .all()
-    
-    def count_papers(self) -> int:
-        """Get total number of papers in database."""
+    def count_papers(self):
         return self.session.query(PaperRecord).count()
     
-    def count_labeled(self) -> int:
-        """Get number of labeled papers."""
-        return self.session.query(PaperRecord)\
-            .filter(PaperRecord.user_label.isnot(None))\
-            .count()
+    def count_labeled(self):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.user_label.isnot(None)
+        ).count()
     
-    def get_categories(self) -> List[str]:
-        """Get list of all unique categories in database."""
-        results = self.session.query(PaperRecord.primary_category)\
-            .distinct()\
-            .all()
+    def search_papers(self, keyword: str, limit=50):
+        keyword = f"%{keyword}%"
+        return self.session.query(PaperRecord).filter(
+            (PaperRecord.title.ilike(keyword)) | 
+            (PaperRecord.summary.ilike(keyword)) |
+            (PaperRecord.authors.ilike(keyword))
+        ).order_by(PaperRecord.relevance_score.desc()).limit(limit).all()
+    
+    def get_categories(self):
+        results = self.session.query(PaperRecord.primary_category).distinct().all()
         return [r[0] for r in results if r[0]]
     
     # =========================================================================
-    # UPDATE OPERATIONS
+    # LABELING OPERATIONS
     # =========================================================================
     
-    def label_paper(self, arxiv_id: str, label: int) -> bool:
-        """
-        Label a paper for training.
-        
-        Args:
-            arxiv_id: The paper's arXiv ID
-            label: 1 = relevant, 0 = not relevant
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            paper = self.get_paper(arxiv_id)
-            if paper:
-                paper.user_label = label
-                self.session.commit()
-                label_text = "👍 relevant" if label == 1 else "👎 not relevant"
-                print(f"   Labeled {arxiv_id} as {label_text}")
-                return True
-            return False
-        except:
-            self.session.rollback()
-            return False
-    
-    def update_score(self, arxiv_id: str, score: float) -> bool:
-        """Update relevance score for a paper."""
-        try:
-            paper = self.get_paper(arxiv_id)
-            if paper:
-                paper.relevance_score = score
-                self.session.commit()
-                return True
-            return False
-        except:
-            self.session.rollback()
-            return False
-    
-    def update_scores_bulk(self, scores: Dict[str, float]) -> int:
-        """
-        Update scores for multiple papers at once.
-        
-        Args:
-            scores: Dictionary of {arxiv_id: score}
-            
-        Returns:
-            Number of papers updated
-        """
-        updated = 0
-        try:
-            for arxiv_id, score in scores.items():
-                paper = self.get_paper(arxiv_id)
-                if paper:
-                    paper.relevance_score = score
-                    updated += 1
+    def label_paper(self, arxiv_id: str, label: int):
+        paper = self.get_paper_by_id(arxiv_id)
+        if paper:
+            paper.user_label = label
+            paper.labeled_at = datetime.utcnow()
             self.session.commit()
-            return updated
-        except:
-            self.session.rollback()
-            return 0
+            return True
+        return False
     
-    def mark_as_read(self, arxiv_id: str) -> bool:
-        """Mark a paper as read."""
-        try:
-            paper = self.get_paper(arxiv_id)
-            if paper:
-                paper.is_read = True
-                self.session.commit()
-                return True
-            return False
-        except:
-            self.session.rollback()
-            return False
+    def get_unlabeled_papers(self, limit=10):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.user_label.is_(None)
+        ).order_by(PaperRecord.relevance_score.desc()).limit(limit).all()
     
-    def toggle_favorite(self, arxiv_id: str) -> bool:
-        """Toggle favorite status."""
-        try:
-            paper = self.get_paper(arxiv_id)
-            if paper:
-                paper.is_favorite = not paper.is_favorite
-                self.session.commit()
-                return paper.is_favorite
-            return False
-        except:
-            self.session.rollback()
-            return False
+    def get_labeled_papers(self):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.user_label.isnot(None)
+        ).all()
+    
+    def get_positive_papers(self):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.user_label == 1
+        ).all()
+    
+    def get_negative_papers(self):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.user_label == 0
+        ).all()
     
     # =========================================================================
-    # DELETE OPERATIONS
+    # READING LIST OPERATIONS
     # =========================================================================
     
-    def delete_paper(self, arxiv_id: str) -> bool:
-        """Delete a paper from database."""
-        try:
-            paper = self.get_paper(arxiv_id)
+    def save_to_reading_list(self, arxiv_id: str):
+        paper = self.get_paper_by_id(arxiv_id)
+        if paper:
+            paper.is_saved = True
+            paper.saved_at = datetime.utcnow()
+            if paper.user_label is None:
+                paper.user_label = 1
+                paper.labeled_at = datetime.utcnow()
+            self.session.commit()
+            return True
+        return False
+    
+    def get_reading_list(self):
+        return self.session.query(PaperRecord).filter(
+            PaperRecord.is_saved == True
+        ).order_by(PaperRecord.saved_at.desc()).all()
+    
+    def remove_from_reading_list(self, arxiv_id: str):
+        paper = self.get_paper_by_id(arxiv_id)
+        if paper:
+            paper.is_saved = False
+            self.session.commit()
+            return True
+        return False
+    
+    # =========================================================================
+    # USER PREFERENCES
+    # =========================================================================
+    
+    def get_preferences(self) -> UserPreferences:
+        prefs = self.session.query(UserPreferences).first()
+        if not prefs:
+            prefs = UserPreferences()
+            self.session.add(prefs)
+            self.session.commit()
+        return prefs
+    
+    def update_preferences(self, **kwargs):
+        prefs = self.get_preferences()
+        for key, value in kwargs.items():
+            if hasattr(prefs, key):
+                setattr(prefs, key, value)
+        prefs.updated_at = datetime.utcnow()
+        self.session.commit()
+        return prefs
+    
+    # =========================================================================
+    # INTEREST TRACKING
+    # =========================================================================
+    
+    def get_user_interests(self):
+        positive_papers = self.get_positive_papers()
+        saved_papers = self.get_reading_list()
+        
+        all_relevant = positive_papers + [p for p in saved_papers if p not in positive_papers]
+        
+        if not all_relevant:
+            return {'categories': {}, 'keywords': []}
+        
+        categories = {}
+        for paper in all_relevant:
+            cat = paper.primary_category or 'unknown'
+            categories[cat] = categories.get(cat, 0) + 1
+        
+        from collections import Counter
+        import re
+        
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                     'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+                     'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 
+                     'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+                     'those', 'using', 'based', 'via', 'new', 'novel', 'approach', 'method'}
+        
+        words = []
+        for paper in all_relevant:
+            if paper.title:
+                title_words = re.findall(r'\b[a-z]{3,}\b', paper.title.lower())
+                words.extend([w for w in title_words if w not in stopwords])
+        
+        keyword_counts = Counter(words).most_common(20)
+        
+        return {
+            'categories': dict(sorted(categories.items(), key=lambda x: -x[1])),
+            'keywords': [kw for kw, count in keyword_counts if count >= 2]
+        }
+    
+    # =========================================================================
+    # DIGEST OPERATIONS
+    # =========================================================================
+    
+    def get_papers_for_digest(self, since_days=7):
+        prefs = self.get_preferences()
+        since_date = datetime.utcnow() - timedelta(days=since_days)
+        
+        sent_ids = set()
+        recent_digests = self.session.query(DigestHistory).filter(
+            DigestHistory.sent_at >= since_date
+        ).all()
+        for digest in recent_digests:
+            sent_ids.update(digest.get_paper_ids())
+        
+        # Get papers - use published date since fetched_at might be null
+        query = self.session.query(PaperRecord).filter(
+            PaperRecord.relevance_score >= prefs.min_relevance_score
+        )
+        
+        tracked_cats = prefs.get_tracked_categories()
+        if tracked_cats:
+            query = query.filter(PaperRecord.primary_category.in_(tracked_cats))
+        
+        papers = query.order_by(PaperRecord.relevance_score.desc()).limit(50).all()
+        papers = [p for p in papers if p.arxiv_id not in sent_ids]
+        
+        return papers[:prefs.max_papers_per_digest]
+    
+    def record_digest(self, paper_ids: list, digest_type: str, status='sent'):
+        digest = DigestHistory(
+            paper_ids=json.dumps(paper_ids),
+            paper_count=len(paper_ids),
+            digest_type=digest_type,
+            status=status
+        )
+        self.session.add(digest)
+        self.session.commit()
+        return digest
+    
+    def get_digest_history(self, limit=10):
+        return self.session.query(DigestHistory).order_by(
+            DigestHistory.sent_at.desc()
+        ).limit(limit).all()
+    
+    # =========================================================================
+    # ML MODEL OPERATIONS
+    # =========================================================================
+    
+    def save_model_state(self, model_blob: str, vectorizer_blob: str, metrics: dict):
+        self.session.query(MLModelState).update({'is_active': False})
+        
+        state = MLModelState(
+            model_blob=model_blob,
+            vectorizer_blob=vectorizer_blob,
+            trained_at=datetime.utcnow(),
+            training_samples=metrics.get('samples', 0),
+            accuracy=metrics.get('accuracy'),
+            precision_score=metrics.get('precision'),
+            recall_score=metrics.get('recall'),
+            f1_score=metrics.get('f1'),
+            top_positive_features=json.dumps(metrics.get('top_positive', [])),
+            top_negative_features=json.dumps(metrics.get('top_negative', [])),
+            is_active=True
+        )
+        self.session.add(state)
+        self.session.commit()
+        
+        prefs = self.get_preferences()
+        prefs.model_last_trained = datetime.utcnow()
+        prefs.model_accuracy = metrics.get('accuracy')
+        self.session.commit()
+        
+        return state
+    
+    def get_active_model(self):
+        return self.session.query(MLModelState).filter_by(is_active=True).first()
+    
+    def update_user_scores(self, scores: dict):
+        for arxiv_id, score in scores.items():
+            paper = self.get_paper_by_id(arxiv_id)
             if paper:
-                self.session.delete(paper)
-                self.session.commit()
-                return True
-            return False
-        except:
-            self.session.rollback()
-            return False
+                paper.user_score = score
+        self.session.commit()
     
     # =========================================================================
     # STATISTICS
     # =========================================================================
     
-    def get_stats(self) -> Dict:
-        """Get database statistics."""
-        total = self.count_papers()
-        labeled = self.count_labeled()
-        
-        positive = self.session.query(PaperRecord)\
-            .filter(PaperRecord.user_label == 1)\
-            .count()
-        
-        categories = self.get_categories()
+    def get_stats(self):
+        total = self.session.query(PaperRecord).count()
+        labeled = self.session.query(PaperRecord).filter(
+            PaperRecord.user_label.isnot(None)
+        ).count()
+        positive = self.session.query(PaperRecord).filter(
+            PaperRecord.user_label == 1
+        ).count()
+        negative = self.session.query(PaperRecord).filter(
+            PaperRecord.user_label == 0
+        ).count()
+        saved = self.session.query(PaperRecord).filter(
+            PaperRecord.is_saved == True
+        ).count()
         
         return {
             'total_papers': total,
             'labeled_papers': labeled,
             'unlabeled_papers': total - labeled,
             'positive_labels': positive,
-            'negative_labels': labeled - positive,
-            'categories': categories,
+            'negative_labels': negative,
+            'saved_papers': saved
         }
-    
-    def close(self):
-        """Close database connection."""
-        self.session.close()
-        print("🔒 Database connection closed")
-
-
-# =============================================================================
-# TEST CODE
-# =============================================================================
-
-if __name__ == "__main__":
-    """
-    Test the database with your actual scraper!
-    """
-    # Import your scraper
-    from scraper import ArXivScraper
-    
-    print("=" * 80)
-    print("🧪 DATABASE TEST")
-    print("=" * 80)
-    
-    # Initialize
-    db = DatabaseManager("data/papers.db")
-    scraper = ArXivScraper(max_results=10)
-    
-    # ----- TEST 1: Fetch and store papers -----
-    print("\n📥 TEST 1: Fetch papers and store in database")
-    print("-" * 40)
-    
-    papers = scraper.get_latest_papers(category="cs.AI", count=10)
-    result = db.add_papers(papers)
-    print(f"   Result: {result}")
-    
-    # ----- TEST 2: Count papers -----
-    print("\n📊 TEST 2: Database statistics")
-    print("-" * 40)
-    
-    stats = db.get_stats()
-    for key, value in stats.items():
-        print(f"   {key}: {value}")
-    
-    # ----- TEST 3: Search -----
-    print("\n🔍 TEST 3: Search for 'learning'")
-    print("-" * 40)
-    
-    results = db.search_papers(keyword="learning", limit=3)
-    print(f"   Found {len(results)} papers")
-    for paper in results:
-        print(f"   - {paper.title[:50]}...")
-    
-    # ----- TEST 4: Get all papers -----
-    print("\n📚 TEST 4: Get recent papers")
-    print("-" * 40)
-    
-    recent = db.get_all_papers(limit=5)
-    for i, paper in enumerate(recent, 1):
-        print(f"   {i}. [{paper.primary_category}] {paper.title[:50]}...")
-    
-    # ----- TEST 5: Label a paper -----
-    print("\n🏷️  TEST 5: Label a paper")
-    print("-" * 40)
-    
-    if recent:
-        test_paper = recent[0]
-        db.label_paper(test_paper.arxiv_id, label=1)
-        
-        # Check it worked
-        labeled_count = db.count_labeled()
-        print(f"   Labeled papers now: {labeled_count}")
-    
-    # ----- TEST 6: Try adding duplicates -----
-    print("\n🔄 TEST 6: Test duplicate prevention")
-    print("-" * 40)
-    
-    result2 = db.add_papers(papers)  # Same papers again
-    print(f"   Result: {result2}")
-    print(f"   (All should be skipped as duplicates!)")
-    
-    # ----- FINAL STATS -----
-    print("\n" + "=" * 80)
-    print("📊 FINAL DATABASE STATS")
-    print("=" * 80)
-    
-    final_stats = db.get_stats()
-    for key, value in final_stats.items():
-        print(f"   {key}: {value}")
-    
-    print(f"\n   Database file: {os.path.abspath(db.db_path)}")
-    
-    db.close()
-    
-    print("\n✅ All database tests passed!")

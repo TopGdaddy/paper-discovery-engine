@@ -1,5 +1,10 @@
 venv/
-.env
 __pycache__/
 *.pyc
+*.db
+data/
+.env
+.streamlit/secrets.toml
+models/
+*.pkl
 .DS_Store
