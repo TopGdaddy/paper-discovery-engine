@@ -76,7 +76,48 @@ st.markdown("""
         max-width: 1800px;
     }
 
-    #MainMenu, footer, header {visibility: hidden;}
+    /* Hide menu and footer but KEEP header for sidebar toggle */
+    #MainMenu, footer {visibility: hidden;}
+    
+    /* === SIDEBAR TOGGLE BUTTON - ALWAYS VISIBLE === */
+    button[kind="header"] {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+        border-radius: 12px !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        padding: 8px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    button[kind="header"]:hover {
+        transform: scale(1.1) !important;
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5) !important;
+    }
+
+    button[kind="header"] svg {
+        stroke: white !important;
+    }
+
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+        border-radius: 12px !important;
+        padding: 8px 12px !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    [data-testid="collapsedControl"]:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 25px rgba(139, 92, 246, 0.6) !important;
+    }
+
+    [data-testid="collapsedControl"] svg {
+        stroke: white !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
     
     /* === GLASSMORPHISM MAGIC === */
     .glass-card {
@@ -118,7 +159,7 @@ st.markdown("""
         border-color: rgba(139, 92, 246, 0.3);
     }
 
-    /* === PAPER CARDS - ABSOLUTE PERFECTION === */
+    /* === PAPER CARDS === */
     .paper-card {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
         border-radius: 32px;
@@ -157,7 +198,7 @@ st.markdown("""
             0 0 0 1px rgba(139, 92, 246, 0.2);
     }
 
-    /* === SCORE BADGES - PURE DOPAMINE === */
+    /* === SCORE BADGES === */
     .score-badge {
         display: inline-block;
         background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
@@ -255,23 +296,13 @@ st.markdown("""
 
     /* === ANIMATIONS === */
     @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(60px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(60px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
     @keyframes glow {
-        0%, 100% {
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
-        }
-        50% {
-            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.7);
-        }
+        0%, 100% { box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
+        50% { box-shadow: 0 10px 40px rgba(139, 92, 246, 0.7); }
     }
     
     @keyframes float {
@@ -349,7 +380,7 @@ st.markdown("""
         box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1) !important;
     }
 
-    /* === SIDEBAR === */
+    /* === SIDEBAR RADIO BUTTONS === */
     [data-testid="stSidebar"] .stRadio > label {
         font-weight: 600 !important;
         font-size: 16px !important;
@@ -379,58 +410,23 @@ st.markdown("""
         margin-bottom: 24px;
         animation: float 3s ease-in-out infinite;
     }
-        /* === MOBILE FIXES === */
-    
-    /* Make hamburger menu more visible on mobile */
+
+    /* === MOBILE RESPONSIVE === */
     @media (max-width: 768px) {
-        /* Sidebar toggle button - make it more visible */
-        [data-testid="collapsedControl"] {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
-            border-radius: 12px !important;
-            padding: 12px !important;
-            left: 10px !important;
-            top: 10px !important;
-            z-index: 999999 !important;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5) !important;
-            border: 2px solid rgba(255, 255, 255, 0.2) !important;
-        }
-        
-        [data-testid="collapsedControl"] svg {
-            fill: white !important;
-            stroke: white !important;
-            width: 24px !important;
-            height: 24px !important;
-        }
-        
-        [data-testid="collapsedControl"]:hover {
-            transform: scale(1.1) !important;
-            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.7) !important;
-        }
-        
-        /* Improve sidebar on mobile */
-        [data-testid="stSidebar"] {
-            min-width: 280px !important;
-            z-index: 999998 !important;
-        }
-        
-        /* Better spacing on mobile */
         .block-container {
             padding: 1rem 1rem 4rem !important;
         }
         
-        /* Smaller headings on mobile */
         h1 {
             font-size: 32px !important;
         }
         
-        /* Paper cards on mobile */
         .paper-card {
             padding: 20px !important;
             margin: 16px 0 !important;
             border-radius: 16px !important;
         }
         
-        /* Metric cards on mobile */
         .metric-card {
             padding: 16px !important;
             margin-bottom: 12px !important;
@@ -440,13 +436,11 @@ st.markdown("""
             font-size: 32px !important;
         }
         
-        /* Glass card on mobile */
         .glass-card {
             padding: 20px !important;
             border-radius: 16px !important;
         }
         
-        /* Empty state on mobile */
         .empty-state {
             padding: 60px 30px !important;
         }
@@ -456,7 +450,6 @@ st.markdown("""
         }
     }
     
-    /* Extra small screens (phones) */
     @media (max-width: 480px) {
         h1 {
             font-size: 24px !important;
@@ -863,39 +856,8 @@ with st.sidebar:
             </a>
             """, unsafe_allow_html=True)
 
-# Add floating menu hint for mobile
-st.markdown("""
-<div class="mobile-menu-hint" style="
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 14px;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
-    z-index: 999999;
-    animation: pulse 2s infinite;
-">
-    ☰ Tap top-left for menu
-</div>
 
-<style>
-    @media (max-width: 768px) {
-        .mobile-menu-hint {
-            display: block !important;
-        }
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-</style>
-""", unsafe_allow_html=True)
+
 
 # =============================================================================
 # PAGES
