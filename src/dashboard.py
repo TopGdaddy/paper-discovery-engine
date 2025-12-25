@@ -404,18 +404,40 @@ ml_engine = get_ml_engine(db)
 email_service = get_email_service(db)
 
 def clean_text(text):
-    """Clean text by removing HTML tags and extra whitespace"""
+    """Clean text by removing HTML tags, extra whitespace, and problematic characters"""
     if not text:
         return ""
     text = str(text)
+    
+    # Remove problematic characters FIRST
+    text = text.replace('\xa0', ' ')  # non-breaking space
+    text = text.replace('\u200b', '')  # zero-width space
+    text = text.replace('\r', '')      # carriage return
+    
     # Remove HTML tags
     text = re.sub(r'<[^>]+>', '', text)
+    
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text)
+    
     # Decode HTML entities
     text = text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
     text = text.replace('&quot;', '"').replace('&#39;', "'")
+    
     return text.strip()
+
+def clean_form_input(text):
+    """Clean form input to remove problematic characters for email/database"""
+    if not text:
+        return text
+    text = str(text).strip()
+    # Remove non-breaking spaces and other problematic chars
+    text = text.replace('\xa0', ' ')
+    text = text.replace('\u200b', '')
+    text = text.replace('\r', '')
+    # Normalize whitespace
+    text = ' '.join(text.split())
+    return text
 
 def truncate(text, length=100):
     if not text:
@@ -1556,6 +1578,11 @@ elif page == "⚙️ Settings":
                 test_btn = st.form_submit_button("📧 Send Test Email", use_container_width=True)
         
         if save_btn:
+            # Clean all form inputs before saving
+            email = clean_form_input(email)
+            smtp_host = clean_form_input(smtp_host)
+            smtp_user = clean_form_input(smtp_user)
+            
             db.update_preferences(
                 email=email,
                 digest_enabled=frequency != "none",
@@ -1573,8 +1600,12 @@ elif page == "⚙️ Settings":
                 email_service.configure(smtp_host, smtp_port, smtp_user, smtp_password)
             
             st.success("✅ Settings saved!")
+
         
         if test_btn:
+            # Clean email input
+            email = clean_form_input(email)
+            
             if not email:
                 st.error("Please enter your email address first!")
             elif not (smtp_user or prefs.smtp_user) or not (smtp_password or prefs.smtp_password):
