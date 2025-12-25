@@ -863,6 +863,40 @@ with st.sidebar:
             </a>
             """, unsafe_allow_html=True)
 
+# Add floating menu hint for mobile
+st.markdown("""
+<div class="mobile-menu-hint" style="
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+    z-index: 999999;
+    animation: pulse 2s infinite;
+">
+    ☰ Tap top-left for menu
+</div>
+
+<style>
+    @media (max-width: 768px) {
+        .mobile-menu-hint {
+            display: block !important;
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # =============================================================================
 # PAGES
 # =============================================================================
