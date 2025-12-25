@@ -1,5 +1,5 @@
 """
-email_service.py - Email Digest Service
+email_service.py - Email Digest Service with UTF-8 Support
 """
 
 import smtplib
@@ -7,6 +7,22 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import List
+import re
+
+
+def clean_text(text):
+    """Remove problematic characters"""
+    if not text:
+        return ""
+    # Replace non-breaking spaces and other problematic chars
+    text = str(text)
+    text = text.replace('\xa0', ' ')
+    text = text.replace('\u200b', '')
+    text = text.replace('\n', ' ')
+    text = text.replace('\r', '')
+    # Remove any other non-ASCII characters
+    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    return text.strip()
 
 
 class EmailDigestService:
@@ -20,8 +36,6 @@ class EmailDigestService:
         self.smtp_password = ''
         self.from_email = ''
         self.from_name = 'Paper Discovery AI'
-        
-        # Load from preferences
         self._load_config()
     
     def _load_config(self):
@@ -48,7 +62,6 @@ class EmailDigestService:
         self.smtp_password = smtp_password
         self.from_email = smtp_user
         
-        # Save to database
         self.db.update_preferences(
             smtp_host=smtp_host,
             smtp_port=smtp_port,
@@ -72,9 +85,12 @@ class EmailDigestService:
         score = paper.relevance_score or paper.user_score or 0
         score_color = '#10b981' if score >= 0.7 else '#3b82f6' if score >= 0.5 else '#8b5cf6'
         
-        title = (paper.title or 'Untitled')[:150]
-        authors = (paper.authors or 'Unknown')[:80]
-        summary = (paper.summary or '')[:250]
+        title = clean_text(paper.title or 'Untitled')[:150]
+        authors = clean_text(paper.authors or 'Unknown')[:80]
+        summary = clean_text(paper.summary or '')[:250]
+        category = clean_text(paper.primary_category or 'Unknown')
+        pdf_url = paper.pdf_url or '#'
+        abs_url = paper.abs_url or '#'
         
         return f"""
         <div style="background: #ffffff; border-radius: 16px; padding: 24px; margin: 16px 0; 
@@ -82,19 +98,19 @@ class EmailDigestService:
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="background: {score_color}; color: white; padding: 6px 14px; border-radius: 20px; 
                             font-size: 13px; font-weight: 600;">{score:.0%} Match</span>
-                <span style="color: #64748b; font-size: 13px;">{paper.primary_category or 'Unknown'}</span>
+                <span style="color: #64748b; font-size: 13px;">{category}</span>
             </div>
             <h3 style="margin: 0 0 12px; color: #1e293b; font-size: 18px; line-height: 1.4;">
-                <a href="{paper.abs_url}" style="color: #1e293b; text-decoration: none;">{title}</a>
+                <a href="{abs_url}" style="color: #1e293b; text-decoration: none;">{title}</a>
             </h3>
-            <p style="color: #64748b; font-size: 14px; margin: 0 0 12px;">👤 {authors}</p>
+            <p style="color: #64748b; font-size: 14px; margin: 0 0 12px;">{authors}</p>
             <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">{summary}...</p>
             <div>
-                <a href="{paper.pdf_url}" style="background: {score_color}; color: white; padding: 10px 20px; 
+                <a href="{pdf_url}" style="background: {score_color}; color: white; padding: 10px 20px; 
                         border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; 
-                        margin-right: 10px;">📄 Read PDF</a>
-                <a href="{paper.abs_url}" style="background: #f1f5f9; color: #475569; padding: 10px 20px; 
-                        border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">🔗 arXiv</a>
+                        margin-right: 10px;">Read PDF</a>
+                <a href="{abs_url}" style="background: #f1f5f9; color: #475569; padding: 10px 20px; 
+                        border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">arXiv</a>
             </div>
         </div>
         """
@@ -108,10 +124,11 @@ class EmailDigestService:
         
         interests_html = ""
         if top_categories:
+            cats_text = ', '.join([clean_text(c) for c in top_categories])
             interests_html = f"""
             <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 20px 0;">
                 <p style="margin: 0; color: #64748b; font-size: 14px;">
-                    📊 <strong>Your interests:</strong> {', '.join(top_categories)}
+                    Your interests: {cats_text}
                 </p>
             </div>
             """
@@ -124,7 +141,6 @@ class EmailDigestService:
                     background: #f1f5f9; margin: 0; padding: 0;">
             <div style="max-width: 680px; margin: 0 auto; padding: 40px 20px;">
                 <div style="text-align: center; margin-bottom: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">✨</div>
                     <h1 style="margin: 0; color: #1e293b; font-size: 28px; font-weight: 800;">
                         Your {digest_type.title()} Research Digest
                     </h1>
@@ -156,7 +172,7 @@ class EmailDigestService:
         
         try:
             msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"✨ Your {digest_type.title()} Research Digest - {len(papers)} New Papers"
+            msg['Subject'] = f"Your {digest_type.title()} Research Digest - {len(papers)} New Papers"
             msg['From'] = f"{self.from_name} <{self.from_email}>"
             msg['To'] = to_email
             
@@ -164,10 +180,12 @@ class EmailDigestService:
             
             plain_text = f"Your {digest_type} research digest\n\n"
             for p in papers:
-                plain_text += f"- {p.title}\n  {p.abs_url}\n\n"
+                title = clean_text(p.title or 'Untitled')
+                plain_text += f"- {title}\n  {p.abs_url}\n\n"
             
-            msg.attach(MIMEText(plain_text, 'plain'))
-            msg.attach(MIMEText(html_content, 'html'))
+            # Encode as UTF-8
+            msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
+            msg.attach(MIMEText(html_content, 'html', 'utf-8'))
             
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
                 server.starttls()
@@ -192,22 +210,31 @@ class EmailDigestService:
         
         try:
             msg = MIMEMultipart('alternative')
-            msg['Subject'] = "✨ Test Email from Paper Discovery"
+            msg['Subject'] = "Test Email from Paper Discovery"
             msg['From'] = f"{self.from_name} <{self.from_email}>"
             msg['To'] = to_email
             
             html = """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body>
             <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 40px;">
                 <div style="text-align: center;">
-                    <div style="font-size: 64px;">✅</div>
-                    <h1 style="color: #1e293b;">Email Works!</h1>
+                    <h1 style="color: #10b981; font-size: 48px; margin: 0;">Success!</h1>
+                    <h2 style="color: #1e293b;">Email Works!</h2>
                     <p style="color: #64748b;">Your Paper Discovery email integration is working correctly.</p>
                 </div>
             </div>
+            </body>
+            </html>
             """
             
-            msg.attach(MIMEText("Test email from Paper Discovery - it works!", 'plain'))
-            msg.attach(MIMEText(html, 'html'))
+            plain = "Test email from Paper Discovery - it works!"
+            
+            # Encode as UTF-8
+            msg.attach(MIMEText(plain, 'plain', 'utf-8'))
+            msg.attach(MIMEText(html, 'html', 'utf-8'))
             
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
                 server.starttls()
