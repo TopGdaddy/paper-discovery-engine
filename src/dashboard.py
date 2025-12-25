@@ -379,6 +379,101 @@ st.markdown("""
         margin-bottom: 24px;
         animation: float 3s ease-in-out infinite;
     }
+        /* === MOBILE FIXES === */
+    
+    /* Make hamburger menu more visible on mobile */
+    @media (max-width: 768px) {
+        /* Sidebar toggle button - make it more visible */
+        [data-testid="collapsedControl"] {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            left: 10px !important;
+            top: 10px !important;
+            z-index: 999999 !important;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5) !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        [data-testid="collapsedControl"] svg {
+            fill: white !important;
+            stroke: white !important;
+            width: 24px !important;
+            height: 24px !important;
+        }
+        
+        [data-testid="collapsedControl"]:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.7) !important;
+        }
+        
+        /* Improve sidebar on mobile */
+        [data-testid="stSidebar"] {
+            min-width: 280px !important;
+            z-index: 999998 !important;
+        }
+        
+        /* Better spacing on mobile */
+        .block-container {
+            padding: 1rem 1rem 4rem !important;
+        }
+        
+        /* Smaller headings on mobile */
+        h1 {
+            font-size: 32px !important;
+        }
+        
+        /* Paper cards on mobile */
+        .paper-card {
+            padding: 20px !important;
+            margin: 16px 0 !important;
+            border-radius: 16px !important;
+        }
+        
+        /* Metric cards on mobile */
+        .metric-card {
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+        }
+        
+        .metric-value {
+            font-size: 32px !important;
+        }
+        
+        /* Glass card on mobile */
+        .glass-card {
+            padding: 20px !important;
+            border-radius: 16px !important;
+        }
+        
+        /* Empty state on mobile */
+        .empty-state {
+            padding: 60px 30px !important;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px !important;
+        }
+    }
+    
+    /* Extra small screens (phones) */
+    @media (max-width: 480px) {
+        h1 {
+            font-size: 24px !important;
+        }
+        
+        .metric-value {
+            font-size: 28px !important;
+        }
+        
+        .metric-label {
+            font-size: 11px !important;
+        }
+        
+        .block-container {
+            padding: 0.5rem 0.5rem 3rem !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
