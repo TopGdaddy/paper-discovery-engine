@@ -779,31 +779,61 @@ def do_search(query, limit=50):
 
 @st.cache_data(ttl=3600)
 def get_reddit_trending():
-    if requests is None:
-        return []
+    """Fetch trending posts from Reddit, with fallback data"""
+    if requests is None: 
+        return get_reddit_fallback()
+    
     trending = []
     try:
-        headers = {'User-Agent': 'PaperDiscoveryBot/2.0'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        
         for sub in ['MachineLearning', 'artificial']:
-            url = f"https://www.reddit.com/r/{sub}/hot.json?limit=5"
-            resp = requests.get(url, headers=headers, timeout=5)
-            if resp.status_code == 200:
-                posts = resp.json().get('data', {}).get('children', [])
-                for post in posts[:2]:
-                    data = post.get('data', {})
-                    title = data.get('title', '')
-                    if title:
-                        trending.append({
-                            'title': truncate(title, 60),
-                            'score': data.get('score', 0),
-                            'url': f"https://reddit.com{data.get('permalink', '')}",
-                            'source': f"r/{sub}"
-                        })
-        trending.sort(key=lambda x: x['score'], reverse=True)
-        return trending[:5]
-    except Exception:
-        return []
+            try:
+                url = f"https://www.reddit.com/r/{sub}/hot.json?limit=5"
+                resp = requests.get(url, headers=headers, timeout=8)
+                
+                if resp. status_code == 200:
+                    posts = resp.json().get('data', {}).get('children', [])
+                    for post in posts[:2]:
+                        data = post.get('data', {})
+                        title = data.get('title', '')
+                        if title:
+                            trending.append({
+                                'title': truncate(title, 60),
+                                'score': data.get('score', 0),
+                                'url': f"https://reddit.com{data.get('permalink', '')}",
+                                'source': f"r/{sub}"
+                            })
+            except requests.exceptions.RequestException as e:
+                print(f"Reddit API error for r/{sub}: {e}")
+                continue
+        
+        if trending:
+            trending.sort(key=lambda x: x['score'], reverse=True)
+            return trending[:5]
+        else: 
+            return get_reddit_fallback()
+            
+    except Exception as e:
+        print(f"Unexpected error in get_reddit_trending: {e}")
+        return get_reddit_fallback()
 
+def get_reddit_fallback():
+    """Return static fallback trending data"""
+    return [
+        {
+            'title': 'Latest developments in AI & Machine Learning',
+            'score':  5000,
+            'url': 'https://reddit.com/r/MachineLearning',
+            'source': 'r/MachineLearning'
+        },
+        {
+            'title':  'Artificial Intelligence research papers & discussions',
+            'score': 3500,
+            'url': 'https://reddit.com/r/artificial',
+            'source':  'r/artificial'
+        },
+    ]
 # =============================================================================
 # SIDEBAR
 # =============================================================================
@@ -849,19 +879,20 @@ with st.sidebar:
     
     st.divider()
     
+   # Reddit Trending Section
     # Reddit Trending Section
     st.markdown("**🔥 Trending on Reddit**")
-    
+
     try:
         trending = get_reddit_trending()
         
         if trending and len(trending) > 0:
-            for item in trending[:4]:
+            for item in trending[: 4]: 
                 st.markdown(f"""
                 <a href="{item['url']}" target="_blank" style="
                     display: block;
                     background: rgba(139, 92, 246, 0.1);
-                    border: 1px solid rgba(139, 92, 246, 0.2);
+                    border:  1px solid rgba(139, 92, 246, 0.2);
                     border-radius: 12px;
                     padding: 12px 14px;
                     margin: 10px 0;
@@ -876,39 +907,11 @@ with st.sidebar:
                 </a>
                 """, unsafe_allow_html=True)
         else:
-            # Fallback when no trending items
-            st.markdown("""
-            <div style="
-                background: rgba(139, 92, 246, 0.1);
-                border: 1px solid rgba(139, 92, 246, 0.2);
-                border-radius: 12px;
-                padding: 16px;
-                text-align: center;
-                color: #94a3b8;
-                font-size: 13px;
-            ">
-                📡 Loading trending topics...<br>
-                <span style="font-size: 11px;">Check back in a moment</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
+            st.info("🔥 Trending topics unavailable")
+                
     except Exception as e:
-        # Error fallback
-        st.markdown("""
-        <div style="
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            color: #94a3b8;
-            font-size: 13px;
-        ">
-            🔥 AI & ML News<br>
-            <span style="font-size: 11px;">Visit r/MachineLearning</span>
-        </div>
-        """, unsafe_allow_html=True)
-
+        print(f"Sidebar trending error: {e}")
+        st.info("🔥 Visit r/MachineLearning for latest discussions")
 
 
 # =============================================================================
