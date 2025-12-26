@@ -824,38 +824,87 @@ with st.sidebar:
     st.divider()
     
     page = st.radio(
-    "Navigate",
-    ["🏠 Dashboard", "📄 Browse Papers", "🔍 Search", "📚 My Reading List", "🏷️ Label Papers", "🧠 My AI", "📊 Analytics", "⚙️ Settings"],
-    label_visibility="collapsed"
+        "Navigate",
+        ["🏠 Dashboard", "📄 Browse Papers", "🔍 Search", "📚 My Reading List", "🏷️ Label Papers", "🧠 My AI", "📊 Analytics", "⚙️ Settings"],
+        label_visibility="collapsed"
     )
     
     st.divider()
     
+    # Quick Stats
     st.markdown("**📈 Quick Stats**")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Papers", f"{db.count_papers():,}")
+        try:
+            paper_count = db.count_papers()
+            st.metric("Papers", f"{paper_count:,}")
+        except:
+            st.metric("Papers", "0")
     with col2:
-        st.metric("Labeled", db.count_labeled())
+        try:
+            labeled_count = db.count_labeled()
+            st.metric("Labeled", labeled_count)
+        except:
+            st.metric("Labeled", "0")
     
     st.divider()
     
-    st.markdown("**🔥 Trending**")
-    trending = get_reddit_trending()
-    if trending:
-        for item in trending[:4]:
-            st.markdown(f"""
-            <a href="{item['url']}" target="_blank" style="
-                display: block; background: rgba(139, 92, 246, 0.1);
-                border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px;
-                padding: 12px 14px; margin: 10px 0; color: #e2e8f0;
-                text-decoration: none; font-size: 13px; line-height: 1.5;
-                transition: all 0.3s;">
-                {item['title']}<br>
-                <span style="color: #94a3b8; font-size: 12px;">{item['source']} • ⬆️ {item['score']}</span>
-            </a>
-            """, unsafe_allow_html=True)
-
+    # Reddit Trending Section
+    st.markdown("**🔥 Trending on Reddit**")
+    
+    @st.cache_data(ttl=1800)  # Cache for 30 minutes instead of 1 hour
+def get_reddit_trending():
+    """Fetch trending posts from Reddit ML communities"""
+    if requests is None:
+        return []
+    
+    trending = []
+    
+    try:
+        headers = {
+            'User-Agent': 'PaperDiscoveryBot/2.0 (Research Paper Discovery App)',
+            'Accept': 'application/json'
+        }
+        
+        subreddits = ['MachineLearning', 'artificial', 'deeplearning']
+        
+        for sub in subreddits:
+            try:
+                url = f"https://www.reddit.com/r/{sub}/hot.json?limit=5"
+                resp = requests.get(url, headers=headers, timeout=10)
+                
+                if resp.status_code == 200:
+                    data = resp.json()
+                    posts = data.get('data', {}).get('children', [])
+                    
+                    for post in posts[:2]:
+                        post_data = post.get('data', {})
+                        title = post_data.get('title', '')
+                        
+                        # Skip stickied posts and empty titles
+                        if not title or post_data.get('stickied', False):
+                            continue
+                        
+                        trending.append({
+                            'title': truncate(title, 55),
+                            'score': post_data.get('score', 0),
+                            'url': f"https://reddit.com{post_data.get('permalink', '')}",
+                            'source': f"r/{sub}"
+                        })
+                        
+            except Exception:
+                # Skip this subreddit if it fails
+                continue
+        
+        # Sort by score and return top 5
+        if trending:
+            trending.sort(key=lambda x: x['score'], reverse=True)
+            return trending[:5]
+        
+        return []
+        
+    except Exception:
+        return []
 
 
 
