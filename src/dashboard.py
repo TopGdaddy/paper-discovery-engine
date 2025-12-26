@@ -1,6 +1,6 @@
 """
-dashboard.py - Ultra-Modern Research Discovery Platform
-The most beautiful paper discovery experience ever built.
+dashboard.py - Research Intelligence Platform
+Professional paper discovery and analysis system.
 """
 
 import streamlit as st
@@ -42,434 +42,1144 @@ except ImportError:
 # PAGE CONFIG
 # =============================================================================
 
+# =============================================================================
+# THEME STATE
+# =============================================================================
+
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'  # Default theme
+
 st.set_page_config(
-    page_title="Paper Discovery • AI Research Engine",
-    page_icon="✨",
+    page_title="Research Intelligence Platform",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
 # =============================================================================
-# COSMIC CSS - THE MOST BEAUTIFUL DESIGN EVER
+# PROFESSIONAL CSS DESIGN SYSTEM
 # =============================================================================
 
-st.markdown("""
+def get_theme_css(theme):
+    """Return CSS based on selected theme"""
+    
+    if theme == 'dark':
+        # === YOUR EXACT DARK THEME (unchanged) ===
+        return """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap');
+    /* ================================================================
+       PROFESSIONAL RESEARCH PLATFORM - DESIGN SYSTEM
+       Version: 2.0
+       Philosophy: Scholarly, Data-Dense, Calm, Professional
+       ================================================================ */
 
-    /* === COSMIC BACKGROUND === */
+    /* === FONT IMPORTS === */
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    /* === CSS CUSTOM PROPERTIES (Design Tokens) === */
+    :root {
+        /* Primary Colors */
+        --primary-50: #eff6ff;
+        --primary-100: #dbeafe;
+        --primary-200: #bfdbfe;
+        --primary-300: #93c5fd;
+        --primary-400: #60a5fa;
+        --primary-500: #3b82f6;
+        --primary-600: #2563eb;
+        --primary-700: #1d4ed8;
+        --primary-800: #1e40af;
+        --primary-900: #1e3a8a;
+
+        /* Neutral Colors (Slate) */
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --slate-700: #334155;
+        --slate-800: #1e293b;
+        --slate-900: #0f172a;
+        --slate-950: #020617;
+
+        /* Semantic Colors */
+        --success-400: #4ade80;
+        --success-500: #22c55e;
+        --success-600: #16a34a;
+        --warning-400: #fbbf24;
+        --warning-500: #f59e0b;
+        --warning-600: #d97706;
+        --error-400: #f87171;
+        --error-500: #ef4444;
+        --error-600: #dc2626;
+
+        /* Accent (for highlights) */
+        --accent-400: #a78bfa;
+        --accent-500: #8b5cf6;
+        --accent-600: #7c3aed;
+
+        /* Typography */
+        --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;
+        
+        /* Font Sizes */
+        --text-xs: 0.75rem;
+        --text-sm: 0.875rem;
+        --text-base: 1rem;
+        --text-lg: 1.125rem;
+        --text-xl: 1.25rem;
+        --text-2xl: 1.5rem;
+        --text-3xl: 2rem;
+
+        /* Spacing */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+        --space-16: 4rem;
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        --radius-xl: 12px;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+        /* Transitions */
+        --transition-fast: 150ms ease;
+        --transition-base: 200ms ease;
+        --transition-slow: 300ms ease;
+    }
+
+    /* === BASE STYLES === */
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
-        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 25%, #16213e 50%, #0f1419 100%);
-        background-attachment: fixed;
-        color: #e2e8f0;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
-        backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(148, 163, 184, 0.1);
+        font-family: var(--font-sans) !important;
+        background: linear-gradient(180deg, var(--slate-900) 0%, var(--slate-950) 100%) !important;
+        color: var(--slate-300) !important;
+        line-height: 1.6 !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
     }
 
+    /* === MAIN CONTAINER === */
     .block-container {
-        padding: 2.5rem 2rem 6rem;
-        max-width: 1800px;
+        padding: var(--space-8) var(--space-6) var(--space-16) !important;
+        max-width: 1400px !important;
     }
 
-    /* Hide menu and footer but KEEP header for sidebar toggle */
-    #MainMenu, footer {visibility: hidden;}
-    
-    /* === SIDEBAR TOGGLE BUTTON - ALWAYS VISIBLE === */
-    button[kind="header"] {
-        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
-        border-radius: 12px !important;
-        border: 2px solid rgba(255, 255, 255, 0.2) !important;
-        padding: 8px !important;
-        transition: all 0.3s ease !important;
+    /* === HIDE STREAMLIT BRANDING (keep sidebar toggle) === */
+    #MainMenu, footer {
+        visibility: hidden !important;
     }
 
-    button[kind="header"]:hover {
-        transform: scale(1.1) !important;
-        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5) !important;
-    }
-
-    button[kind="header"] svg {
-        stroke: white !important;
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: auto !important;
     }
 
     [data-testid="collapsedControl"] {
+        display: flex !important;
         visibility: visible !important;
-        opacity: 1 !important;
-        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
-        border-radius: 12px !important;
-        padding: 8px 12px !important;
-        border: 2px solid rgba(255, 255, 255, 0.2) !important;
-        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4) !important;
-        transition: all 0.3s ease !important;
+        background: var(--slate-800) !important;
+        border: 1px solid var(--slate-600) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 8px !important;
+        margin: 8px !important;
+        transition: all var(--transition-fast) !important;
     }
 
     [data-testid="collapsedControl"]:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 6px 25px rgba(139, 92, 246, 0.6) !important;
+        background: var(--slate-700) !important;
+        border-color: var(--primary-500) !important;
     }
 
     [data-testid="collapsedControl"] svg {
-        stroke: white !important;
+        color: var(--slate-300) !important;
         width: 20px !important;
         height: 20px !important;
     }
-    
-    /* === GLASSMORPHISM MAGIC === */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.06);
-        backdrop-filter: blur(24px) saturate(180%);
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 28px;
-        padding: 36px;
-        box-shadow: 
-            0 8px 32px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        animation: slideUp 0.8s ease-out;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .glass-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-        transition: left 0.7s;
-    }
-    
-    .glass-card:hover::before {
-        left: 100%;
-    }
-    
-    .glass-card:hover {
-        transform: translateY(-12px);
-        box-shadow: 
-            0 24px 48px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        border-color: rgba(139, 92, 246, 0.3);
+
+    /* === SIDEBAR === */
+    [data-testid="stSidebar"] {
+        background: var(--slate-800) !important;
+        border-right: 1px solid var(--slate-700) !important;
     }
 
-    /* === PAPER CARDS === */
-    .paper-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
-        border-radius: 32px;
-        padding: 40px 44px;
-        margin: 32px 0;
-        box-shadow: 
-            0 20px 60px rgba(0, 0, 0, 0.15),
-            0 0 0 1px rgba(0, 0, 0, 0.05);
-        border-left: 8px solid;
-        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .paper-card::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 8px;
-        background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 50%, #10b981 100%);
-        border-radius: 32px 32px 0 0;
-        opacity: 0;
-        transition: opacity 0.5s;
-    }
-    
-    .paper-card:hover::after {
-        opacity: 1;
-    }
-    
-    .paper-card:hover {
-        transform: translateY(-20px) scale(1.01);
-        box-shadow: 
-            0 40px 90px rgba(0, 0, 0, 0.25),
-            0 0 0 1px rgba(139, 92, 246, 0.2);
+    [data-testid="stSidebar"] > div:first-child {
+        padding: var(--space-6) var(--space-4) !important;
     }
 
-    /* === SCORE BADGES === */
-    .score-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-        color: white;
-        padding: 14px 28px;
-        border-radius: 60px;
-        font-weight: 800;
-        font-size: 17px;
-        box-shadow: 
-            0 10px 30px rgba(139, 92, 246, 0.4),
-            inset 0 1px 0 rgba(255,255,255,0.2);
-        animation: glow 3s ease-in-out infinite;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-    }
-    
-    .score-badge-high {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.5);
-    }
-    
-    .score-badge-medium {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.5);
+    [data-testid="stSidebar"] .stRadio > div {
+        gap: var(--space-1) !important;
     }
 
-    /* === GRADIENT HEADINGS === */
+    [data-testid="stSidebar"] .stRadio > div > label {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        color: var(--slate-300) !important;
+        padding: var(--space-3) var(--space-4) !important;
+        border-radius: var(--radius-md) !important;
+        border-left: 3px solid transparent !important;
+        transition: all var(--transition-fast) !important;
+        background: transparent !important;
+        margin: 0 !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div > label:hover {
+        background: var(--slate-700) !important;
+        color: var(--slate-100) !important;
+        border-left-color: var(--primary-500) !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: var(--primary-400) !important;
+        border-left-color: var(--primary-500) !important;
+    }
+
+    /* === TYPOGRAPHY === */
     h1 {
-        font-family: 'Space Grotesk', 'Inter', sans-serif !important;
-        font-weight: 900 !important;
-        background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 50%, #10b981 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        letter-spacing: -0.03em;
-        line-height: 1.2;
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-3xl) !important;
+        font-weight: 700 !important;
+        color: var(--slate-50) !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
+        margin-bottom: var(--space-2) !important;
     }
-    
-    h2, h3 {
-        font-weight: 800 !important;
-        color: #1e293b !important;
+
+    h2 {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-xl) !important;
+        font-weight: 600 !important;
+        color: var(--slate-100) !important;
+        letter-spacing: -0.01em !important;
+        margin-top: var(--space-8) !important;
+        margin-bottom: var(--space-4) !important;
+        padding-bottom: var(--space-3) !important;
+        border-bottom: 1px solid var(--slate-700) !important;
+    }
+
+    h3 {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-lg) !important;
+        font-weight: 600 !important;
+        color: var(--slate-200) !important;
+        margin-top: var(--space-6) !important;
+        margin-bottom: var(--space-3) !important;
+    }
+
+    p, .stMarkdown, .stText {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        color: var(--slate-400) !important;
+        line-height: 1.7 !important;
+    }
+
+    a {
+        color: var(--primary-400) !important;
+        text-decoration: none !important;
+        transition: color var(--transition-fast) !important;
+    }
+
+    a:hover {
+        color: var(--primary-300) !important;
+        text-decoration: underline !important;
+    }
+
+    /* === PROFESSIONAL PAPER CARD === */
+    .paper-card-pro {
+        background: var(--slate-800);
+        border: 1px solid var(--slate-700);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        margin: var(--space-4) 0;
+        transition: all var(--transition-base);
+        position: relative;
+    }
+
+    .paper-card-pro:hover {
+        border-color: var(--slate-600);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .paper-card-pro .paper-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-3);
+    }
+
+    .paper-card-pro .paper-title {
+        font-family: var(--font-sans);
+        font-size: var(--text-base);
+        font-weight: 600;
+        color: var(--slate-100);
+        line-height: 1.4;
+        margin: 0;
+        flex: 1;
+    }
+
+    .paper-card-pro .paper-meta {
+        font-family: var(--font-sans);
+        font-size: var(--text-xs);
+        color: var(--slate-500);
+        margin-bottom: var(--space-3);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+    }
+
+    .paper-card-pro .paper-abstract {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--slate-400);
+        line-height: 1.7;
+        margin-bottom: var(--space-4);
+    }
+
+    .paper-card-pro .paper-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--slate-700);
+    }
+
+    /* === RELEVANCE INDICATOR === */
+    .relevance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        padding: var(--space-1) var(--space-3);
+        border-radius: 100px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .relevance-high {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success-400);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .relevance-medium {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-400);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .relevance-low {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--slate-400);
+        border: 1px solid rgba(100, 116, 139, 0.2);
+    }
+
+    /* === CATEGORY TAG === */
+    .category-tag {
+        display: inline-block;
+        padding: var(--space-1) var(--space-2);
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--accent-400);
+    }
+
+    /* === METRIC CARDS === */
+    .metric-card-pro {
+        background: var(--slate-800);
+        border: 1px solid var(--slate-700);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        text-align: center;
+        transition: all var(--transition-base);
+    }
+
+    .metric-card-pro:hover {
+        border-color: var(--slate-600);
+    }
+
+    .metric-card-pro .metric-label {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--slate-500);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: var(--space-2);
+    }
+
+    .metric-card-pro .metric-value {
+        font-family: var(--font-mono);
+        font-size: var(--text-2xl);
+        font-weight: 600;
+        color: var(--slate-50);
+        line-height: 1;
     }
 
     /* === BUTTONS === */
     .stButton > button {
-        border-radius: 20px !important;
-        height: 58px !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        border: 2px solid transparent !important;
-        letter-spacing: 0.3px !important;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-6px) !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
-        border-color: currentColor !important;
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        border-radius: var(--radius-md) !important;
+        padding: var(--space-2) var(--space-4) !important;
+        height: auto !important;
+        min-height: 40px !important;
+        transition: all var(--transition-fast) !important;
+        border: 1px solid transparent !important;
     }
 
-    /* === METRIC CARDS === */
-    .metric-card {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-        backdrop-filter: blur(16px);
-        border-radius: 24px;
-        padding: 32px;
-        text-align: center;
-        border: 1px solid rgba(139, 92, 246, 0.2);
-        transition: all 0.4s ease;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    }
-    
-    .metric-card:hover {
-        transform: scale(1.08) rotate(2deg);
-        border-color: rgba(139, 92, 246, 0.4);
-        box-shadow: 0 16px 48px rgba(139, 92, 246, 0.3);
-    }
-    
-    .metric-value {
-        font-size: 48px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #8b5cf6, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 12px 0;
-    }
-    
-    .metric-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-    }
-
-    /* === ANIMATIONS === */
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(60px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
-        50% { box-shadow: 0 10px 40px rgba(139, 92, 246, 0.7); }
-    }
-    
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
-
-    /* === CATEGORY BADGES === */
-    .category-badge {
-        display: inline-block;
-        background: rgba(15, 23, 42, 0.08);
-        color: #1e293b;
-        padding: 12px 24px;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 15px;
-        border: 2px solid rgba(15, 23, 42, 0.12);
-        transition: all 0.3s;
-    }
-    
-    .category-badge:hover {
-        background: rgba(139, 92, 246, 0.15);
-        border-color: rgba(139, 92, 246, 0.3);
-        transform: scale(1.05);
-    }
-
-    /* === LINKS === */
-    .paper-link {
-        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    .stButton > button[kind="primary"],
+    .stButton > button[data-testid="baseButton-primary"] {
+        background: var(--primary-600) !important;
         color: white !important;
-        padding: 18px 36px;
-        border-radius: 18px;
-        text-decoration: none;
-        font-weight: 800;
-        font-size: 16px;
-        display: inline-block;
-        box-shadow: 0 12px 35px rgba(139, 92, 246, 0.35);
-        transition: all 0.4s ease;
-        border: 2px solid transparent;
-    }
-    
-    .paper-link:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 50px rgba(139, 92, 246, 0.5);
-        border-color: rgba(255, 255, 255, 0.3);
-    }
-    
-    .paper-link-secondary {
-        background: rgba(15, 23, 42, 0.08);
-        color: #1e293b !important;
-        border: 2px solid rgba(15, 23, 42, 0.15);
-        box-shadow: none;
-    }
-    
-    .paper-link-secondary:hover {
-        background: rgba(15, 23, 42, 0.12);
-        border-color: rgba(139, 92, 246, 0.3);
+        border-color: var(--primary-600) !important;
     }
 
-    /* === INPUT FIELDS === */
+    .stButton > button[kind="primary"]:hover,
+    .stButton > button[data-testid="baseButton-primary"]:hover {
+        background: var(--primary-700) !important;
+        border-color: var(--primary-700) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+
+    .stButton > button[kind="secondary"],
+    .stButton > button[data-testid="baseButton-secondary"] {
+        background: transparent !important;
+        color: var(--slate-300) !important;
+        border-color: var(--slate-600) !important;
+    }
+
+    .stButton > button[kind="secondary"]:hover,
+    .stButton > button[data-testid="baseButton-secondary"]:hover {
+        background: var(--slate-700) !important;
+        border-color: var(--slate-500) !important;
+        color: var(--slate-100) !important;
+    }
+
+    /* === FORM INPUTS === */
     .stTextInput > div > div > input,
-    .stSelectbox > div > div > select {
-        border-radius: 16px !important;
-        border: 2px solid rgba(148, 163, 184, 0.2) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        color: #e2e8f0 !important;
-        padding: 14px 20px !important;
-        font-size: 15px !important;
-        transition: all 0.3s !important;
-    }
-    
-    .stTextInput > div > div > input:focus,
-    .stSelectbox > div > div > select:focus {
-        border-color: rgba(139, 92, 246, 0.6) !important;
-        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1) !important;
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > div,
+    .stMultiSelect > div > div > div {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        background: var(--slate-800) !important;
+        border: 1px solid var(--slate-600) !important;
+        border-radius: var(--radius-md) !important;
+        color: var(--slate-200) !important;
+        transition: all var(--transition-fast) !important;
     }
 
-    /* === SIDEBAR RADIO BUTTONS === */
-    [data-testid="stSidebar"] .stRadio > label {
-        font-weight: 600 !important;
-        font-size: 16px !important;
-        color: #e2e8f0 !important;
-        padding: 14px 20px !important;
-        border-radius: 14px !important;
-        transition: all 0.3s !important;
-        margin: 4px 0 !important;
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: var(--primary-500) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        outline: none !important;
     }
-    
-    [data-testid="stSidebar"] .stRadio > label:hover {
-        background: rgba(139, 92, 246, 0.15) !important;
-        transform: translateX(6px) !important;
+
+    /* === TABS === */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: var(--space-1) !important;
+        background: var(--slate-800) !important;
+        padding: var(--space-1) !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--slate-700) !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        color: var(--slate-400) !important;
+        background: transparent !important;
+        border-radius: var(--radius-md) !important;
+        padding: var(--space-2) var(--space-4) !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: var(--primary-600) !important;
+        color: white !important;
     }
 
     /* === EMPTY STATE === */
-    .empty-state {
+    .empty-state-pro {
         text-align: center;
-        padding: 120px 60px;
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 32px;
-        border: 2px dashed rgba(148, 163, 184, 0.2);
-    }
-    
-    .empty-state-icon {
-        font-size: 80px;
-        margin-bottom: 24px;
-        animation: float 3s ease-in-out infinite;
+        padding: var(--space-16) var(--space-8);
+        background: var(--slate-800);
+        border: 1px dashed var(--slate-600);
+        border-radius: var(--radius-xl);
     }
 
-    /* === MOBILE RESPONSIVE === */
+    .empty-state-pro h3 {
+        font-family: var(--font-sans);
+        font-size: var(--text-lg);
+        font-weight: 600;
+        color: var(--slate-300);
+        margin-bottom: var(--space-2);
+    }
+
+    .empty-state-pro p {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--slate-500);
+    }
+
+    /* === GLASS CARD === */
+    .glass-card {
+        background: var(--slate-800);
+        border: 1px solid var(--slate-700);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        margin: var(--space-4) 0;
+    }
+
+    /* === SCROLLBAR === */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--slate-900);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--slate-600);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--slate-500);
+    }
+
+    /* === METRIC COMPONENT === */
+    [data-testid="stMetric"] {
+        background: var(--slate-800) !important;
+        border: 1px solid var(--slate-700) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--space-4) !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-family: var(--font-sans) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        color: var(--slate-500) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-family: var(--font-mono) !important;
+        font-size: var(--text-2xl) !important;
+        font-weight: 600 !important;
+        color: var(--slate-50) !important;
+    }
+
+    /* === RESPONSIVE === */
     @media (max-width: 768px) {
         .block-container {
-            padding: 1rem 1rem 4rem !important;
+            padding: var(--space-4) var(--space-3) var(--space-12) !important;
         }
-        
+
         h1 {
-            font-size: 32px !important;
+            font-size: var(--text-2xl) !important;
         }
-        
-        .paper-card {
-            padding: 20px !important;
-            margin: 16px 0 !important;
-            border-radius: 16px !important;
+
+        h2 {
+            font-size: var(--text-lg) !important;
         }
-        
-        .metric-card {
-            padding: 16px !important;
-            margin-bottom: 12px !important;
+
+        .paper-card-pro {
+            padding: var(--space-4) !important;
         }
-        
-        .metric-value {
-            font-size: 32px !important;
+
+        .metric-card-pro {
+            padding: var(--space-4) !important;
         }
-        
-        .glass-card {
-            padding: 20px !important;
-            border-radius: 16px !important;
-        }
-        
-        .empty-state {
-            padding: 60px 30px !important;
-        }
-        
-        .empty-state-icon {
-            font-size: 48px !important;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        h1 {
-            font-size: 24px !important;
-        }
-        
-        .metric-value {
-            font-size: 28px !important;
-        }
-        
-        .metric-label {
-            font-size: 11px !important;
-        }
-        
-        .block-container {
-            padding: 0.5rem 0.5rem 3rem !important;
+
+        .metric-card-pro .metric-value {
+            font-size: var(--text-xl) !important;
         }
     }
 </style>
-""", unsafe_allow_html=True)
+"""
+    
+    else:  # Light theme
+        return """
+<style>
+    /* ================================================================
+       PROFESSIONAL RESEARCH PLATFORM - LIGHT THEME
+       Version: 2.0
+       ================================================================ */
 
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    :root {
+        --primary-50: #eff6ff;
+        --primary-100: #dbeafe;
+        --primary-200: #bfdbfe;
+        --primary-300: #93c5fd;
+        --primary-400: #60a5fa;
+        --primary-500: #3b82f6;
+        --primary-600: #2563eb;
+        --primary-700: #1d4ed8;
+        --primary-800: #1e40af;
+        --primary-900: #1e3a8a;
+
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --slate-700: #334155;
+        --slate-800: #1e293b;
+        --slate-900: #0f172a;
+        --slate-950: #020617;
+
+        --success-400: #4ade80;
+        --success-500: #22c55e;
+        --success-600: #16a34a;
+        --warning-400: #fbbf24;
+        --warning-500: #f59e0b;
+        --warning-600: #d97706;
+        --error-400: #f87171;
+        --error-500: #ef4444;
+        --error-600: #dc2626;
+
+        --accent-400: #a78bfa;
+        --accent-500: #8b5cf6;
+        --accent-600: #7c3aed;
+
+        --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-mono: 'IBM Plex Mono', 'SF Mono', 'Consolas', monospace;
+        
+        --text-xs: 0.75rem;
+        --text-sm: 0.875rem;
+        --text-base: 1rem;
+        --text-lg: 1.125rem;
+        --text-xl: 1.25rem;
+        --text-2xl: 1.5rem;
+        --text-3xl: 2rem;
+
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+        --space-16: 4rem;
+
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        --radius-xl: 12px;
+
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.03);
+
+        --transition-fast: 150ms ease;
+        --transition-base: 200ms ease;
+        --transition-slow: 300ms ease;
+    }
+
+    /* === BASE STYLES === */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+        font-family: var(--font-sans) !important;
+        background: var(--slate-50) !important;
+        color: var(--slate-700) !important;
+        line-height: 1.6 !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+    }
+
+    .block-container {
+        padding: var(--space-8) var(--space-6) var(--space-16) !important;
+        max-width: 1400px !important;
+    }
+
+    #MainMenu, footer {
+        visibility: hidden !important;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: auto !important;
+    }
+
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        background: white !important;
+        border: 1px solid var(--slate-200) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 8px !important;
+        margin: 8px !important;
+        transition: all var(--transition-fast) !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+
+    [data-testid="collapsedControl"]:hover {
+        background: var(--slate-50) !important;
+        border-color: var(--primary-500) !important;
+    }
+
+    [data-testid="collapsedControl"] svg {
+        color: var(--slate-600) !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+
+    /* === SIDEBAR === */
+    [data-testid="stSidebar"] {
+        background: white !important;
+        border-right: 1px solid var(--slate-200) !important;
+    }
+
+    [data-testid="stSidebar"] > div:first-child {
+        padding: var(--space-6) var(--space-4) !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div {
+        gap: var(--space-1) !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div > label {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        color: var(--slate-600) !important;
+        padding: var(--space-3) var(--space-4) !important;
+        border-radius: var(--radius-md) !important;
+        border-left: 3px solid transparent !important;
+        transition: all var(--transition-fast) !important;
+        background: transparent !important;
+        margin: 0 !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div > label:hover {
+        background: var(--slate-100) !important;
+        color: var(--slate-900) !important;
+        border-left-color: var(--primary-500) !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio > div > label[data-checked="true"] {
+        background: var(--primary-50) !important;
+        color: var(--primary-700) !important;
+        border-left-color: var(--primary-500) !important;
+    }
+
+    /* === TYPOGRAPHY === */
+    h1 {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-3xl) !important;
+        font-weight: 700 !important;
+        color: var(--slate-900) !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
+        margin-bottom: var(--space-2) !important;
+    }
+
+    h2 {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-xl) !important;
+        font-weight: 600 !important;
+        color: var(--slate-800) !important;
+        letter-spacing: -0.01em !important;
+        margin-top: var(--space-8) !important;
+        margin-bottom: var(--space-4) !important;
+        padding-bottom: var(--space-3) !important;
+        border-bottom: 1px solid var(--slate-200) !important;
+    }
+
+    h3 {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-lg) !important;
+        font-weight: 600 !important;
+        color: var(--slate-800) !important;
+        margin-top: var(--space-6) !important;
+        margin-bottom: var(--space-3) !important;
+    }
+
+    p, .stMarkdown, .stText {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        color: var(--slate-600) !important;
+        line-height: 1.7 !important;
+    }
+
+    a {
+        color: var(--primary-600) !important;
+        text-decoration: none !important;
+        transition: color var(--transition-fast) !important;
+    }
+
+    a:hover {
+        color: var(--primary-700) !important;
+        text-decoration: underline !important;
+    }
+
+    /* === PROFESSIONAL PAPER CARD === */
+    .paper-card-pro {
+        background: white;
+        border: 1px solid var(--slate-200);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        margin: var(--space-4) 0;
+        transition: all var(--transition-base);
+        position: relative;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .paper-card-pro:hover {
+        border-color: var(--primary-300);
+        box-shadow: var(--shadow-md);
+    }
+
+    .paper-card-pro .paper-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-4);
+        margin-bottom: var(--space-3);
+    }
+
+    .paper-card-pro .paper-title {
+        font-family: var(--font-sans);
+        font-size: var(--text-base);
+        font-weight: 600;
+        color: var(--slate-900);
+        line-height: 1.4;
+        margin: 0;
+        flex: 1;
+    }
+
+    .paper-card-pro .paper-meta {
+        font-family: var(--font-sans);
+        font-size: var(--text-xs);
+        color: var(--slate-500);
+        margin-bottom: var(--space-3);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+    }
+
+    .paper-card-pro .paper-abstract {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--slate-600);
+        line-height: 1.7;
+        margin-bottom: var(--space-4);
+    }
+
+    .paper-card-pro .paper-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--slate-200);
+    }
+
+    /* === RELEVANCE INDICATOR === */
+    .relevance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        padding: var(--space-1) var(--space-3);
+        border-radius: 100px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+
+    .relevance-high {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--success-600);
+        border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+
+    .relevance-medium {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary-700);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .relevance-low {
+        background: rgba(100, 116, 139, 0.1);
+        color: var(--slate-600);
+        border: 1px solid rgba(100, 116, 139, 0.2);
+    }
+
+    /* === CATEGORY TAG === */
+    .category-tag {
+        display: inline-block;
+        padding: var(--space-1) var(--space-2);
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--accent-600);
+    }
+
+    /* === METRIC CARDS === */
+    .metric-card-pro {
+        background: white;
+        border: 1px solid var(--slate-200);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        text-align: center;
+        transition: all var(--transition-base);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .metric-card-pro:hover {
+        border-color: var(--slate-300);
+        box-shadow: var(--shadow-md);
+    }
+
+    .metric-card-pro .metric-label {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--slate-500);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: var(--space-2);
+    }
+
+    .metric-card-pro .metric-value {
+        font-family: var(--font-mono);
+        font-size: var(--text-2xl);
+        font-weight: 600;
+        color: var(--slate-900);
+        line-height: 1;
+    }
+
+    /* === BUTTONS === */
+    .stButton > button {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        border-radius: var(--radius-md) !important;
+        padding: var(--space-2) var(--space-4) !important;
+        height: auto !important;
+        min-height: 40px !important;
+        transition: all var(--transition-fast) !important;
+        border: 1px solid transparent !important;
+    }
+
+    .stButton > button[kind="primary"],
+    .stButton > button[data-testid="baseButton-primary"] {
+        background: var(--primary-600) !important;
+        color: white !important;
+        border-color: var(--primary-600) !important;
+    }
+
+    .stButton > button[kind="primary"]:hover,
+    .stButton > button[data-testid="baseButton-primary"]:hover {
+        background: var(--primary-700) !important;
+        border-color: var(--primary-700) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+
+    .stButton > button[kind="secondary"],
+    .stButton > button[data-testid="baseButton-secondary"] {
+        background: white !important;
+        color: var(--slate-700) !important;
+        border-color: var(--slate-300) !important;
+    }
+
+    .stButton > button[kind="secondary"]:hover,
+    .stButton > button[data-testid="baseButton-secondary"]:hover {
+        background: var(--slate-50) !important;
+        border-color: var(--slate-400) !important;
+        color: var(--slate-900) !important;
+    }
+
+    /* === FORM INPUTS === */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > div,
+    .stMultiSelect > div > div > div {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        background: white !important;
+        border: 1px solid var(--slate-300) !important;
+        border-radius: var(--radius-md) !important;
+        color: var(--slate-900) !important;
+        transition: all var(--transition-fast) !important;
+    }
+
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: var(--primary-500) !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        outline: none !important;
+    }
+
+    /* === TABS === */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: var(--space-1) !important;
+        background: var(--slate-100) !important;
+        padding: var(--space-1) !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--slate-200) !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-family: var(--font-sans) !important;
+        font-size: var(--text-sm) !important;
+        font-weight: 500 !important;
+        color: var(--slate-600) !important;
+        background: transparent !important;
+        border-radius: var(--radius-md) !important;
+        padding: var(--space-2) var(--space-4) !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: white !important;
+        color: var(--primary-700) !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+
+    /* === EMPTY STATE === */
+    .empty-state-pro {
+        text-align: center;
+        padding: var(--space-16) var(--space-8);
+        background: white;
+        border: 1px dashed var(--slate-300);
+        border-radius: var(--radius-xl);
+    }
+
+    .empty-state-pro h3 {
+        font-family: var(--font-sans);
+        font-size: var(--text-lg);
+        font-weight: 600;
+        color: var(--slate-700);
+        margin-bottom: var(--space-2);
+    }
+
+    .empty-state-pro p {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--slate-500);
+    }
+
+    /* === GLASS CARD === */
+    .glass-card {
+        background: white;
+        border: 1px solid var(--slate-200);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        margin: var(--space-4) 0;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* === SCROLLBAR === */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--slate-100);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--slate-300);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--slate-400);
+    }
+
+    /* === METRIC COMPONENT === */
+    [data-testid="stMetric"] {
+        background: white !important;
+        border: 1px solid var(--slate-200) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--space-4) !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        font-family: var(--font-sans) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        color: var(--slate-500) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-family: var(--font-mono) !important;
+        font-size: var(--text-2xl) !important;
+        font-weight: 600 !important;
+        color: var(--slate-900) !important;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+        .block-container {
+            padding: var(--space-4) var(--space-3) var(--space-12) !important;
+        }
+
+        h1 {
+            font-size: var(--text-2xl) !important;
+        }
+
+        h2 {
+            font-size: var(--text-lg) !important;
+        }
+
+        .paper-card-pro {
+            padding: var(--space-4) !important;
+        }
+
+        .metric-card-pro {
+            padding: var(--space-4) !important;
+        }
+
+        .metric-card-pro .metric-value {
+            font-size: var(--text-xl) !important;
+        }
+    }
+</style>
+"""
+
+# Apply theme CSS
+st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 # =============================================================================
 # DATABASE & HELPERS
 # =============================================================================
@@ -497,33 +1207,24 @@ def clean_text(text):
         return ""
     text = str(text)
     
-    # Remove problematic characters FIRST
-    text = text.replace('\xa0', ' ')  # non-breaking space
-    text = text.replace('\u200b', '')  # zero-width space
-    text = text.replace('\r', '')      # carriage return
-    
-    # Remove HTML tags
+    text = text.replace('\xa0', ' ')
+    text = text.replace('\u200b', '')
+    text = text.replace('\r', '')
     text = re.sub(r'<[^>]+>', '', text)
-    
-    # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text)
-    
-    # Decode HTML entities
     text = text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
     text = text.replace('&quot;', '"').replace('&#39;', "'")
     
     return text.strip()
 
 def clean_form_input(text):
-    """Clean form input to remove problematic characters for email/database"""
+    """Clean form input to remove problematic characters"""
     if not text:
         return text
     text = str(text).strip()
-    # Remove non-breaking spaces and other problematic chars
     text = text.replace('\xa0', ' ')
     text = text.replace('\u200b', '')
     text = text.replace('\r', '')
-    # Normalize whitespace
     text = ' '.join(text.split())
     return text
 
@@ -534,32 +1235,30 @@ def truncate(text, length=100):
     return text if len(text) <= length else text[:length].rsplit(' ', 1)[0] + "..."
 
 def get_score_style(score):
-    """Returns color, emoji, and badge class for score"""
+    """Returns color and badge class for score - NO EMOJIS"""
     s = score or 0
     if s >= 0.75:
-        return "#10b981", "🔥", "score-badge-high"
+        return "#10b981", "relevance-high"
     if s >= 0.60:
-        return "#3b82f6", "⚡", "score-badge-medium"
+        return "#3b82f6", "relevance-medium"
     if s >= 0.45:
-        return "#8b5cf6", "⭐", "score-badge"
-    return "#64748b", "📄", "score-badge"
+        return "#8b5cf6", "relevance-medium"
+    return "#64748b", "relevance-low"
 
 # =============================================================================
 # COMPONENTS
 # =============================================================================
 
 def render_paper_card(paper: PaperRecord, show_summary=True):
-    """Renders paper card using Streamlit components"""
+    """Renders professional paper card using Streamlit components"""
     score = paper.relevance_score or 0
-    color, emoji, badge_class = get_score_style(score)
+    color, badge_class = get_score_style(score)
     
-    # Clean all text content
     title = clean_text(paper.title or "Untitled Paper")
     authors = clean_text(paper.authors or "Unknown Authors")
     summary = clean_text(paper.summary or "") if show_summary else ""
     category = clean_text(paper.primary_category or "Unknown")
     
-    # Truncate after cleaning
     title = title[:120] + "..." if len(title) > 120 else title
     authors = authors[:100] + "..." if len(authors) > 100 else authors
     summary = summary[:340] + "..." if len(summary) > 340 else summary
@@ -567,32 +1266,33 @@ def render_paper_card(paper: PaperRecord, show_summary=True):
     pdf_url = paper.pdf_url or "#"
     abs_url = paper.abs_url or "#"
     
-    # Use Streamlit components for clean rendering
     with st.container():
         col1, col2 = st.columns([3, 1])
         with col1:
-            st.markdown(f'<span style="background: linear-gradient(135deg, {color} 0%, {color} 100%); color: white; padding: 8px 16px; border-radius: 30px; font-weight: 700; font-size: 14px;">{emoji} {score:.0%} match</span>', unsafe_allow_html=True)
+            st.markdown(f'''
+            <span class="relevance-badge {badge_class}">{score:.0%} Relevance</span>
+            ''', unsafe_allow_html=True)
         with col2:
-            st.markdown(f'<span style="background: rgba(15, 23, 42, 0.08); color: #1e293b; padding: 8px 16px; border-radius: 30px; font-weight: 700; font-size: 14px;">📂 {category}</span>', unsafe_allow_html=True)
+            st.markdown(f'<span class="category-tag">{category}</span>', unsafe_allow_html=True)
         
         st.markdown(f"### [{title}]({abs_url})")
-        st.markdown(f"**👤 {authors}**")
+        st.markdown(f"**{authors}**")
         
         if summary:
             st.write(summary)
         
         col1, col2 = st.columns(2)
         with col1:
-            st.link_button("📄 Read PDF", pdf_url, use_container_width=True)
+            st.link_button("View PDF", pdf_url, use_container_width=True)
         with col2:
-            st.link_button("🔗 arXiv Abstract", abs_url, use_container_width=True)
+            st.link_button("arXiv Abstract", abs_url, use_container_width=True)
         
         st.divider()
 
-def render_metric_card(label, value, icon="📊"):
+def render_metric_card(label, value):
+    """Render professional metric card - NO ICONS"""
     st.markdown(f"""
-    <div class="metric-card">
-        <div style="font-size: 40px; margin-bottom: 12px;">{icon}</div>
+    <div class="metric-card-pro">
         <div class="metric-label">{label}</div>
         <div class="metric-value">{value}</div>
     </div>
@@ -613,14 +1313,14 @@ def create_score_chart(papers):
         x=scores,
         nbinsx=20,
         marker=dict(
-            color='rgba(139, 92, 246, 0.7)',
-            line=dict(color='rgba(139, 92, 246, 1)', width=2)
+            color='rgba(59, 130, 246, 0.7)',
+            line=dict(color='rgba(59, 130, 246, 1)', width=2)
         ),
         hovertemplate='Score: %{x:.0f}%<br>Count: %{y}<extra></extra>'
     ))
     
     fig.update_layout(
-        title=dict(text='Score Distribution', font=dict(size=18, color='#e2e8f0')),
+        title=dict(text='Relevance Score Distribution', font=dict(size=18, color='#e2e8f0')),
         xaxis=dict(
             title=dict(text='Relevance Score (%)', font=dict(size=14, color='#94a3b8')),
             tickfont=dict(size=12, color='#94a3b8'),
@@ -628,7 +1328,7 @@ def create_score_chart(papers):
             range=[0, 100]
         ),
         yaxis=dict(
-            title=dict(text='Papers', font=dict(size=14, color='#94a3b8')),
+            title=dict(text='Paper Count', font=dict(size=14, color='#94a3b8')),
             tickfont=dict(size=12, color='#94a3b8'),
             gridcolor='rgba(148, 163, 184, 0.1)'
         ),
@@ -658,16 +1358,16 @@ def create_category_chart(papers):
         orientation='h',
         marker=dict(
             color=df['Count'],
-            colorscale='Purples',
-            line=dict(color='rgba(139, 92, 246, 1)', width=2)
+            colorscale='Blues',
+            line=dict(color='rgba(59, 130, 246, 1)', width=2)
         ),
         hovertemplate='%{y}<br>Papers: %{x}<extra></extra>'
     ))
     
     fig.update_layout(
-        title=dict(text='Top Categories', font=dict(size=18, color='#e2e8f0')),
+        title=dict(text='Papers by Category', font=dict(size=18, color='#e2e8f0')),
         xaxis=dict(
-            title=dict(text='Papers', font=dict(size=14, color='#94a3b8')),
+            title=dict(text='Paper Count', font=dict(size=14, color='#94a3b8')),
             tickfont=dict(size=12, color='#94a3b8'),
             gridcolor='rgba(148, 163, 184, 0.1)'
         ),
@@ -705,22 +1405,22 @@ def create_timeline_chart(papers):
         x=df['Date'],
         y=df['Papers'],
         mode='lines+markers',
-        line=dict(color='#8b5cf6', width=4),
-        marker=dict(size=10, color='#8b5cf6'),
+        line=dict(color='#3b82f6', width=3),
+        marker=dict(size=8, color='#3b82f6'),
         fill='tozeroy',
-        fillcolor='rgba(139, 92, 246, 0.2)',
+        fillcolor='rgba(59, 130, 246, 0.15)',
         hovertemplate='%{x}<br>Papers: %{y}<extra></extra>'
     ))
     
     fig.update_layout(
-        title=dict(text='Papers Over Time', font=dict(size=18, color='#e2e8f0')),
+        title=dict(text='Publication Timeline', font=dict(size=18, color='#e2e8f0')),
         xaxis=dict(
             title=dict(text='Date', font=dict(size=14, color='#94a3b8')),
             tickfont=dict(size=11, color='#94a3b8'),
             gridcolor='rgba(148, 163, 184, 0.1)'
         ),
         yaxis=dict(
-            title=dict(text='Papers', font=dict(size=14, color='#94a3b8')),
+            title=dict(text='Paper Count', font=dict(size=14, color='#94a3b8')),
             tickfont=dict(size=12, color='#94a3b8'),
             gridcolor='rgba(148, 163, 184, 0.1)'
         ),
@@ -739,12 +1439,10 @@ def save_paper_from_arxiv(entry):
     """Save a paper from arXiv search to database"""
     arxiv_id = entry.link.split("/")[-1]
     
-    # Check if already exists
     existing = db.session.query(PaperRecord).filter_by(arxiv_id=arxiv_id).first()
     if existing:
-        return False, "Already saved!"
+        return False, "Already in library"
     
-    # Extract published date properly
     published = None
     if hasattr(entry, 'published_parsed') and entry.published_parsed:
         try:
@@ -761,12 +1459,12 @@ def save_paper_from_arxiv(entry):
         abs_url=entry.link,
         primary_category=getattr(entry, 'category', 'cs.LG') if hasattr(entry, 'tags') and entry.tags else "cs.LG",
         published=published,
-        relevance_score=0.95  # Mark as highly relevant since you saved it
+        relevance_score=0.95
     )
     
     db.session.add(new_paper)
     db.session.commit()
-    return True, "Saved to Reading List!"
+    return True, "Added to library"
 
 def do_search(query, limit=50):
     if not query or not query.strip():
@@ -792,7 +1490,7 @@ def get_reddit_trending():
                 url = f"https://www.reddit.com/r/{sub}/hot.json?limit=5"
                 resp = requests.get(url, headers=headers, timeout=8)
                 
-                if resp. status_code == 200:
+                if resp.status_code == 200:
                     posts = resp.json().get('data', {}).get('children', [])
                     for post in posts[:2]:
                         data = post.get('data', {})
@@ -805,7 +1503,6 @@ def get_reddit_trending():
                                 'source': f"r/{sub}"
                             })
             except requests.exceptions.RequestException as e:
-                print(f"Reddit API error for r/{sub}: {e}")
                 continue
         
         if trending:
@@ -815,7 +1512,6 @@ def get_reddit_trending():
             return get_reddit_fallback()
             
     except Exception as e:
-        print(f"Unexpected error in get_reddit_trending: {e}")
         return get_reddit_fallback()
 
 def get_reddit_fallback():
@@ -823,46 +1519,47 @@ def get_reddit_fallback():
     return [
         {
             'title': 'Latest developments in AI & Machine Learning',
-            'score':  5000,
+            'score': 5000,
             'url': 'https://reddit.com/r/MachineLearning',
             'source': 'r/MachineLearning'
         },
         {
-            'title':  'Artificial Intelligence research papers & discussions',
+            'title': 'Artificial Intelligence research discussions',
             'score': 3500,
             'url': 'https://reddit.com/r/artificial',
-            'source':  'r/artificial'
+            'source': 'r/artificial'
         },
     ]
+
 # =============================================================================
-# SIDEBAR
+# SIDEBAR - PROFESSIONAL VERSION
 # =============================================================================
 
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; padding: 50px 20px 40px;">
-        <div style="font-size: 80px; margin-bottom: 16px; animation: float 4s ease-in-out infinite;">✨</div>
-        <h1 style="font-size: 36px; font-weight: 900; margin: 0; letter-spacing: -1px;">
-            Paper Discovery
+    <div style="text-align: center; padding: 40px 20px 30px;">
+        <h1 style="font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; color: #f1f5f9;">
+            Research Intelligence
         </h1>
-        <p style="color: #94a3b8; font-size: 16px; margin-top: 16px; font-weight: 600; letter-spacing: 0.5px;">
-            Your AI Research Companion
+        <p style="color: #64748b; font-size: 14px; margin-top: 8px; font-weight: 500;">
+            Paper Discovery Platform
         </p>
     </div>
     """, unsafe_allow_html=True)
     
     st.divider()
     
+    # PROFESSIONAL NAVIGATION - No emojis
     page = st.radio(
         "Navigate",
-        ["🏠 Dashboard", "📄 Browse Papers", "🔍 Search", "📚 My Reading List", "🏷️ Label Papers", "🧠 My AI", "📊 Analytics", "⚙️ Settings"],
+        ["Dashboard", "Literature Repository", "Search", "Library", "Training Data", "Model", "Analytics", "Settings"],
         label_visibility="collapsed"
     )
     
     st.divider()
     
-    # Quick Stats
-    st.markdown("**📈 Quick Stats**")
+    # Quick Stats - Professional labels
+    st.markdown("**Overview**")
     col1, col2 = st.columns(2)
     with col1:
         try:
@@ -879,52 +1576,50 @@ with st.sidebar:
     
     st.divider()
     
-   # Reddit Trending Section
-    # Reddit Trending Section
-    st.markdown("**🔥 Trending on Reddit**")
+    # Community Discussions - Professional header
+    st.markdown("**Community Discussions**")
 
     try:
         trending = get_reddit_trending()
         
         if trending and len(trending) > 0:
-            for item in trending[: 4]: 
+            for item in trending[:4]: 
                 st.markdown(f"""
                 <a href="{item['url']}" target="_blank" style="
                     display: block;
-                    background: rgba(139, 92, 246, 0.1);
-                    border:  1px solid rgba(139, 92, 246, 0.2);
-                    border-radius: 12px;
+                    background: rgba(59, 130, 246, 0.1);
+                    border: 1px solid rgba(59, 130, 246, 0.2);
+                    border-radius: 8px;
                     padding: 12px 14px;
                     margin: 10px 0;
                     color: #e2e8f0;
                     text-decoration: none;
                     font-size: 13px;
                     line-height: 1.5;
-                    transition: all 0.3s;
+                    transition: all 0.2s;
                 ">
                     {item['title']}<br>
-                    <span style="color: #94a3b8; font-size: 12px;">{item['source']} • ⬆️ {item['score']}</span>
+                    <span style="color: #64748b; font-size: 12px;">{item['source']} · {item['score']:,} upvotes</span>
                 </a>
                 """, unsafe_allow_html=True)
         else:
-            st.info("🔥 Trending topics unavailable")
+            st.info("Community feed unavailable")
                 
     except Exception as e:
-        print(f"Sidebar trending error: {e}")
-        st.info("🔥 Visit r/MachineLearning for latest discussions")
+        st.info("Visit r/MachineLearning for discussions")
 
 
 # =============================================================================
-# PAGES
+# PAGES - PROFESSIONAL VERSIONS
 # =============================================================================
 
-if page == "🏠 Dashboard":
+if page == "Dashboard":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 64px; margin: 80px 0 24px; letter-spacing: -2px;'>
-        Your Daily Research Magic ✨
+    <h1 style='text-align: center; font-size: 48px; margin: 60px 0 16px; letter-spacing: -1px;'>
+        Research Intelligence Dashboard
     </h1>
-    <p style='text-align: center; font-size: 22px; color: #94a3b8; margin-bottom: 80px; font-weight: 500;'>
-        Curated by AI • Personalized for You
+    <p style='text-align: center; font-size: 18px; color: #64748b; margin-bottom: 60px; font-weight: 400;'>
+        Personalized recommendations based on your research interests
     </p>
     """, unsafe_allow_html=True)
     
@@ -945,30 +1640,29 @@ if page == "🏠 Dashboard":
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        render_metric_card("Total Papers", str(len(all_papers)), "📄")
+        render_metric_card("Total Papers", str(len(all_papers)))
     with col2:
-        render_metric_card("High Relevance", str(high_rel), "🔥")
+        render_metric_card("High Relevance", str(high_rel))
     with col3:
-        render_metric_card("Labeled", str(stats.get('labeled_papers', 0)), "🏷️")
+        render_metric_card("Labeled", str(stats.get('labeled_papers', 0)))
     with col4:
-        render_metric_card("Avg Score", f"{avg_score:.0%}", "📊")
+        render_metric_card("Avg. Score", f"{avg_score:.0%}")
     
     st.markdown("<br><br>", unsafe_allow_html=True)
     
     col_main, col_side = st.columns([3, 2])
     
     with col_main:
-        st.markdown('<h2 style="font-size: 32px; margin: 0 0 32px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🔥 Top Recommendations</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="font-size: 24px; margin: 0 0 24px; color: #f1f5f9;">High-Relevance Publications</h2>', unsafe_allow_html=True)
         if all_papers:
             top_papers = sorted(all_papers, key=lambda p: p.relevance_score or 0, reverse=True)[:5]
             for paper in top_papers:
                 render_paper_card(paper, show_summary=True)
         else:
             st.markdown("""
-            <div class="empty-state">
-                <div class="empty-state-icon">📭</div>
-                <h3 style="color: #e2e8f0; margin: 0 0 16px;">No papers yet</h3>
-                <p style="color: #94a3b8;">Run the pipeline to fetch papers!</p>
+            <div class="empty-state-pro">
+                <h3>No papers in repository</h3>
+                <p>Run the data pipeline to fetch papers from arXiv.</p>
             </div>
             """, unsafe_allow_html=True)
     
@@ -978,7 +1672,7 @@ if page == "🏠 Dashboard":
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
         
-        st.markdown('<h3 style="font-size: 24px; margin: 40px 0 24px; color: #e2e8f0;">📂 Top Categories</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 style="font-size: 18px; margin: 32px 0 16px; color: #e2e8f0;">Category Distribution</h3>', unsafe_allow_html=True)
         
         if all_papers:
             cats = {}
@@ -989,44 +1683,44 @@ if page == "🏠 Dashboard":
             for cat, count in sorted(cats.items(), key=lambda x: -x[1])[:6]:
                 pct = count / len(all_papers) * 100
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; padding: 16px 20px; 
-                background: rgba(139, 92, 246, 0.1); border-radius: 12px; margin: 12px 0;
-                border: 1px solid rgba(139, 92, 246, 0.2); transition: all 0.3s;">
-                    <span style="color: #e2e8f0; font-weight: 600;">{cat}</span>
-                    <span style="color: #94a3b8; font-weight: 700;">{count} ({pct:.0f}%)</span>
+                <div style="display: flex; justify-content: space-between; padding: 12px 16px; 
+                background: rgba(59, 130, 246, 0.08); border-radius: 8px; margin: 8px 0;
+                border: 1px solid rgba(59, 130, 246, 0.15);">
+                    <span style="color: #e2e8f0; font-weight: 500;">{cat}</span>
+                    <span style="color: #64748b; font-weight: 600;">{count} ({pct:.0f}%)</span>
                 </div>
                 """, unsafe_allow_html=True)
 
-elif page == "📄 Browse Papers":
+elif page == "Literature Repository":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        📄 Browse Papers
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Literature Repository
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Explore and filter your collection
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Browse and filter your paper collection
     </p>
     """, unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
-        min_score = st.slider("📊 Min Score", 0, 100, 0, 5, format="%d%%")
+        min_score = st.slider("Minimum Relevance", 0, 100, 0, 5, format="%d%%")
     with col2:
         try:
-            categories = ["All"] + db.get_categories()
+            categories = ["All Categories"] + db.get_categories()
         except:
-            categories = ["All"]
-        selected_cat = st.selectbox("📂 Category", categories)
+            categories = ["All Categories"]
+        selected_cat = st.selectbox("Category", categories)
     with col3:
         sort_opts = {
-            "🔥 Score ↓": "score_desc",
-            "📉 Score ↑": "score_asc",
-            "🆕 Newest": "date_desc",
-            "📅 Oldest": "date_asc"
+            "Relevance (High to Low)": "score_desc",
+            "Relevance (Low to High)": "score_asc",
+            "Date (Newest)": "date_desc",
+            "Date (Oldest)": "date_asc"
         }
-        sort_by = st.selectbox("🔢 Sort", list(sort_opts.keys()))
+        sort_by = st.selectbox("Sort By", list(sort_opts.keys()))
     with col4:
-        per_page = st.selectbox("📄 Show", [25, 50, 100])
+        per_page = st.selectbox("Per Page", [25, 50, 100])
     
     st.divider()
     
@@ -1036,7 +1730,7 @@ elif page == "📄 Browse Papers":
         all_papers = []
     
     filtered = [p for p in all_papers if (p.relevance_score or 0) * 100 >= min_score]
-    if selected_cat != "All":
+    if selected_cat != "All Categories":
         filtered = [p for p in filtered if p.primary_category == selected_cat]
     
     sort_key = sort_opts[sort_by]
@@ -1054,7 +1748,7 @@ elif page == "📄 Browse Papers":
     
     col_info, col_page = st.columns([4, 1])
     with col_info:
-        st.markdown(f"**Found {total:,} papers**")
+        st.markdown(f"**{total:,} papers found**")
     with col_page:
         current_page = st.number_input("Page", 1, total_pages, 1, label_visibility="collapsed")
     
@@ -1064,17 +1758,16 @@ elif page == "📄 Browse Papers":
     for paper in papers_to_show:
         render_paper_card(paper)
 
-elif page == "🔍 Search":
+elif page == "Search":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        🔍 Universal Research Discovery
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Search Publications
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Search ALL science • Save works perfectly now
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Search arXiv across all scientific domains
     </p>
     """, unsafe_allow_html=True)
 
-    # Initialize session state for search results
     if 'search_results' not in st.session_state:
         st.session_state.search_results = []
     if 'saved_papers' not in st.session_state:
@@ -1082,13 +1775,11 @@ elif page == "🔍 Search":
     if 'just_saved' not in st.session_state:
         st.session_state.just_saved = None
 
-    # Show balloons if just saved
     if st.session_state.just_saved:
         st.balloons()
-        st.toast(f"✅ Saved: {st.session_state.just_saved}", icon="🎉")
+        st.toast(f"Added: {st.session_state.just_saved}")
         st.session_state.just_saved = None
 
-    # Categories
     categories = {
         "All Fields": "",
         "cs.AI - Artificial Intelligence": "cs.AI",
@@ -1102,13 +1793,13 @@ elif page == "🔍 Search":
     }
 
     with st.form(key="search_form"):
-        query = st.text_input("🔍 Search all of science", placeholder="grok, quantum, cancer, bitcoin...", label_visibility="collapsed")
+        query = st.text_input("Search Query", placeholder="transformer, quantum computing, CRISPR...", label_visibility="collapsed")
         col1, col2 = st.columns([1, 1])
         with col1:
             selected_cat = st.selectbox("Field", list(categories.keys()), index=0)
         with col2:
             num_results = st.selectbox("Results", [10, 20, 30], index=1)
-        submit = st.form_submit_button("🚀 Search arXiv", use_container_width=True)
+        submit = st.form_submit_button("Search arXiv", use_container_width=True, type="primary")
 
     if submit and query.strip():
         cat_code = categories[selected_cat]
@@ -1118,7 +1809,7 @@ elif page == "🔍 Search":
             import time, urllib.parse
             time.sleep(3)
             
-            headers = {'User-Agent': 'VeerEngine/1.0'}
+            headers = {'User-Agent': 'ResearchPlatform/1.0'}
             encoded = urllib.parse.quote(query)
             url = f"https://export.arxiv.org/api/query?search_query=all:{encoded}{cat_query}&max_results={num_results}&sortBy=submittedDate"
             
@@ -1126,7 +1817,6 @@ elif page == "🔍 Search":
                 r = requests.get(url, headers=headers, timeout=15)
                 feed = feedparser.parse(r.content)
                 
-                # Store results in session state
                 st.session_state.search_results = []
                 for entry in feed.entries:
                     arxiv_id = entry.link.split("/")[-1]
@@ -1147,22 +1837,18 @@ elif page == "🔍 Search":
                         'published': published_date
                     })
                 
-                st.success(f"Found {len(st.session_state.search_results)} papers!")
+                st.success(f"Found {len(st.session_state.search_results)} papers")
                 
             except Exception as e:
-                st.error("arXiv is slow — try again in 10 seconds")
+                st.error("arXiv request timeout - please try again")
                 st.session_state.search_results = []
 
-    # Display results from session state
     if st.session_state.search_results:
-        
-        # Get already saved arxiv_ids from database
         try:
             saved_arxiv_ids = {p.arxiv_id for p in db.get_all_papers() if hasattr(p, 'arxiv_id')}
         except:
             saved_arxiv_ids = set()
         
-        # Merge with session saved papers
         saved_arxiv_ids = saved_arxiv_ids.union(st.session_state.saved_papers)
         
         for i, paper in enumerate(st.session_state.search_results):
@@ -1177,70 +1863,69 @@ elif page == "🔍 Search":
             
             with st.container():
                 st.markdown(f"""
-                <div class="paper-card" style="border-left-color: {'#10b981' if already_saved else '#8b5cf6'};">
-                    <h3 style="margin:16px 0; color:#e2e8f0; font-size:24px;">{title}</h3>
-                    <p style="color:#94a3b8;">👤 {authors}</p>
-                    <p style="color:#cbd5e1;">{summary}</p>
-                    <div style="margin-top:20px;">
-                        <a href="{pdf_url}" target="_blank" class="paper-link">📄 PDF</a>
-                        <a href="{abs_url}" target="_blank" class="paper-link paper-link-secondary">🔗 arXiv</a>
-                    </div>
+                <div class="paper-card-pro" style="border-left: 3px solid {'#10b981' if already_saved else '#3b82f6'};">
+                    <h3 style="margin:12px 0; color:#e2e8f0; font-size:18px; font-weight: 600;">{title}</h3>
+                    <p style="color:#94a3b8; font-size: 14px;">{authors}</p>
+                    <p style="color:#cbd5e1; font-size: 14px; line-height: 1.6;">{summary}</p>
                 </div>
                 """, unsafe_allow_html=True)
-
-                if already_saved:
-                    st.success("✓ Already in Reading List")
-                else:
-                    # Use unique key with index
-                    if st.button("✨ Save to Reading List", key=f"save_{arxiv_id}_{i}"):
-                        try:
-                            new_paper = PaperRecord(
-                                arxiv_id=arxiv_id,
-                                title=paper['title'],
-                                authors=paper['authors'],
-                                summary=paper['summary'],
-                                pdf_url=paper['pdf_url'],
-                                abs_url=paper['abs_url'],
-                                primary_category=paper['category'],
-                                published=paper['published'],
-                                relevance_score=0.99
-                            )
-                            
-                            db.session.add(new_paper)
-                            db.session.commit()
-                            
-                            # Track saved paper
-                            st.session_state.saved_papers.add(arxiv_id)
-                            st.session_state.just_saved = title[:50] + "..."
-                            
-                            st.rerun()  # Rerun to show balloons and update UI
-                            
-                        except Exception as e:
-                            db.session.rollback()
-                            st.error(f"Save failed: {str(e)}")
+                
+                col1, col2, col3 = st.columns([1, 1, 1])
+                with col1:
+                    st.link_button("View PDF", pdf_url, use_container_width=True)
+                with col2:
+                    st.link_button("arXiv Page", abs_url, use_container_width=True)
+                with col3:
+                    if already_saved:
+                        st.success("In Library")
+                    else:
+                        if st.button("Add to Library", key=f"save_{arxiv_id}_{i}", use_container_width=True):
+                            try:
+                                new_paper = PaperRecord(
+                                    arxiv_id=arxiv_id,
+                                    title=paper['title'],
+                                    authors=paper['authors'],
+                                    summary=paper['summary'],
+                                    pdf_url=paper['pdf_url'],
+                                    abs_url=paper['abs_url'],
+                                    primary_category=paper['category'],
+                                    published=paper['published'],
+                                    relevance_score=0.99
+                                )
+                                
+                                db.session.add(new_paper)
+                                db.session.commit()
+                                
+                                st.session_state.saved_papers.add(arxiv_id)
+                                st.session_state.just_saved = title[:50] + "..."
+                                
+                                st.rerun()
+                                
+                            except Exception as e:
+                                db.session.rollback()
+                                st.error(f"Save failed: {str(e)}")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
 
     elif not submit:
         st.markdown("""
-        <div class="empty-state">
-            <div class="empty-state-icon">🌍</div>
-            <h3 style="color: #e2e8f0;">Search everything</h3>
-            <p style="color: #94a3b8;">Physics • Biology • Math • Finance • AI • Everything</p>
+        <div class="empty-state-pro">
+            <h3>Search Scientific Literature</h3>
+            <p>Access papers from Physics, Biology, Mathematics, Finance, AI, and more.</p>
         </div>
         """, unsafe_allow_html=True)
     
     if submit and not query.strip():
-        st.warning("Please type something to search!")
+        st.warning("Please enter a search query")
 
 
-elif page == "🏷️ Label Papers":
+elif page == "Training Data":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        🏷️ Label Papers
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Training Data Curation
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Help improve the AI by rating papers
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Label papers to improve model recommendations
     </p>
     """, unsafe_allow_html=True)
     
@@ -1251,20 +1936,20 @@ elif page == "🏷️ Label Papers":
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        render_metric_card("Labeled", str(stats.get('labeled_papers', 0)), "✅")
+        render_metric_card("Labeled", str(stats.get('labeled_papers', 0)))
     with col2:
-        render_metric_card("Relevant", str(stats.get('positive_labels', 0)), "👍")
+        render_metric_card("Relevant", str(stats.get('positive_labels', 0)))
     with col3:
-        render_metric_card("Not Relevant", str(stats.get('negative_labels', 0)), "👎")
+        render_metric_card("Not Relevant", str(stats.get('negative_labels', 0)))
     with col4:
-        render_metric_card("Remaining", str(stats.get('unlabeled_papers', 0)), "📝")
+        render_metric_card("Remaining", str(stats.get('unlabeled_papers', 0)))
     
     st.markdown("<br>", unsafe_allow_html=True)
     
     if stats.get('total_papers', 0) > 0:
         progress = stats['labeled_papers'] / stats['total_papers']
         st.progress(progress)
-        st.caption(f"📊 {progress:.0%} complete")
+        st.caption(f"Labeling progress: {progress:.0%}")
     
     st.divider()
     
@@ -1275,47 +1960,46 @@ elif page == "🏷️ Label Papers":
     
     if not unlabeled:
         st.markdown("""
-        <div class="empty-state">
-            <div class="empty-state-icon">🎉</div>
-            <h3 style="color: #e2e8f0; margin: 0 0 16px;">All Papers Labeled!</h3>
-            <p style="color: #94a3b8;">You can now retrain the classifier</p>
+        <div class="empty-state-pro">
+            <h3>All Papers Labeled</h3>
+            <p>You can now train or retrain the classifier model.</p>
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.markdown(f'<h2 style="font-size: 28px; margin: 0 0 32px; color: #e2e8f0;">📝 Papers to Label ({len(unlabeled)} shown)</h2>', unsafe_allow_html=True)
+        st.markdown(f'<h2 style="font-size: 20px; margin: 0 0 24px; color: #e2e8f0;">Papers Requiring Classification ({len(unlabeled)} shown)</h2>', unsafe_allow_html=True)
         
         for paper in unlabeled:
             render_paper_card(paper)
             col1, col2, col3, col4 = st.columns([1.5, 1.5, 1.5, 3])
             
             with col1:
-                if st.button("👍 Relevant", key=f"rel_{paper.arxiv_id}", use_container_width=True):
+                if st.button("Relevant", key=f"rel_{paper.arxiv_id}", use_container_width=True, type="primary"):
                     try:
                         db.label_paper(paper.arxiv_id, 1)
-                        st.toast("✅ Labeled relevant!")
+                        st.toast("Labeled as relevant")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error: {e}")
             with col2:
-                if st.button("👎 Not Relevant", key=f"not_{paper.arxiv_id}", use_container_width=True):
+                if st.button("Not Relevant", key=f"not_{paper.arxiv_id}", use_container_width=True):
                     try:
                         db.label_paper(paper.arxiv_id, 0)
-                        st.toast("❌ Labeled not relevant!")
+                        st.toast("Labeled as not relevant")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Error: {e}")
             with col3:
-                st.link_button("📄 Read First", paper.pdf_url or "#", use_container_width=True)
+                st.link_button("Read Paper", paper.pdf_url or "#", use_container_width=True)
             
             st.divider()
 
-elif page == "📊 Analytics":
+elif page == "Analytics":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        📊 Analytics Dashboard
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Analytics Dashboard
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Deep insights into your collection
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Insights into your paper collection
     </p>
     """, unsafe_allow_html=True)
     
@@ -1325,7 +2009,7 @@ elif page == "📊 Analytics":
         all_papers = []
     
     if not all_papers:
-        st.warning("📭 No papers yet!")
+        st.warning("No papers in repository")
     else:
         scores = [p.relevance_score or 0 for p in all_papers]
         avg_score = sum(scores) / len(scores)
@@ -1334,19 +2018,19 @@ elif page == "📊 Analytics":
         
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            render_metric_card("Total", str(len(all_papers)), "📄")
+            render_metric_card("Total", str(len(all_papers)))
         with col2:
-            render_metric_card("Avg Score", f"{avg_score:.0%}", "📊")
+            render_metric_card("Avg Score", f"{avg_score:.0%}")
         with col3:
-            render_metric_card("High", str(high_rel), "🔥")
+            render_metric_card("High Relevance", str(high_rel))
         with col4:
-            render_metric_card("Low", str(low_rel), "📉")
+            render_metric_card("Low Relevance", str(low_rel))
         with col5:
             try:
                 cat_count = len(db.get_categories())
             except:
                 cat_count = 0
-            render_metric_card("Categories", str(cat_count), "📂")
+            render_metric_card("Categories", str(cat_count))
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -1366,70 +2050,68 @@ elif page == "📊 Analytics":
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
         with col2:
-            st.markdown('<h3 style="font-size: 24px; margin: 0 0 24px; color: #e2e8f0;">🏆 Top 5 Papers</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="font-size: 18px; margin: 0 0 16px; color: #e2e8f0;">Top 5 Papers by Relevance</h3>', unsafe_allow_html=True)
             top_5 = sorted(all_papers, key=lambda p: p.relevance_score or 0, reverse=True)[:5]
             for i, p in enumerate(top_5, 1):
                 score = p.relevance_score or 0
-                color, emoji, _ = get_score_style(score)
+                color, _ = get_score_style(score)
                 title_clean = clean_text(p.title or "Untitled")[:50]
                 st.markdown(f"""
-                <div style="display: flex; align-items: center; padding: 16px 20px; 
-                background: rgba(139, 92, 246, 0.1); border-radius: 12px; margin: 12px 0;
-                border-left: 4px solid {color};">
-                    <span style="font-size: 24px; font-weight: 900; color: {color}; margin-right: 16px;">#{i}</span>
+                <div style="display: flex; align-items: center; padding: 12px 16px; 
+                background: rgba(59, 130, 246, 0.08); border-radius: 8px; margin: 8px 0;
+                border-left: 3px solid {color};">
+                    <span style="font-size: 18px; font-weight: 700; color: {color}; margin-right: 12px;">#{i}</span>
                     <div style="flex: 1;">
-                        <div style="font-size: 14px; font-weight: 600; color: #e2e8f0;">{title_clean}</div>
-                        <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">{emoji} {score:.0%}</div>
+                        <div style="font-size: 14px; font-weight: 500; color: #e2e8f0;">{title_clean}</div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">{score:.0%} relevance</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
         
         st.divider()
-        st.markdown('<h3 style="font-size: 28px; margin: 32px 0 24px; color: #e2e8f0;">📈 Score Breakdown</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 style="font-size: 20px; margin: 24px 0 16px; color: #e2e8f0;">Score Distribution</h3>', unsafe_allow_html=True)
         
         col1, col2, col3, col4 = st.columns(4)
         brackets = [
-            ("🔥 Excellent", len([s for s in scores if s >= 0.75])),
-            ("⭐ Good", len([s for s in scores if 0.55 <= s < 0.75])),
-            ("👍 Fair", len([s for s in scores if 0.35 <= s < 0.55])),
-            ("📄 Low", len([s for s in scores if s < 0.35]))
+            ("Excellent (75%+)", len([s for s in scores if s >= 0.75])),
+            ("Good (55-74%)", len([s for s in scores if 0.55 <= s < 0.75])),
+            ("Fair (35-54%)", len([s for s in scores if 0.35 <= s < 0.55])),
+            ("Low (<35%)", len([s for s in scores if s < 0.35]))
         ]
         
         for i, (label, count) in enumerate(brackets):
             with [col1, col2, col3, col4][i]:
                 pct = count / len(all_papers) * 100 if all_papers else 0
                 st.markdown(f"""
-                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2);
-                border-radius: 16px; padding: 24px; text-align: center;">
-                    <div style="font-size: 14px; color: #94a3b8; margin-bottom: 8px;">{label}</div>
-                    <div style="font-size: 40px; font-weight: 900; color: #8b5cf6;">{count}</div>
-                    <div style="font-size: 13px; color: #64748b; margin-top: 4px;">{pct:.1f}%</div>
+                <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);
+                border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 6px;">{label}</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #3b82f6;">{count}</div>
+                    <div style="font-size: 12px; color: #475569; margin-top: 4px;">{pct:.1f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-elif page == "📚 My Reading List":
+elif page == "Library":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        📚 My Reading List
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Personal Library
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Papers you saved • Your personal collection
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Your saved papers and reading list
     </p>
     """, unsafe_allow_html=True)
     
-    # Get papers from reading list (is_saved = True)
     saved_papers = db.get_reading_list()
     
     if not saved_papers:
         st.markdown("""
-        <div class="empty-state">
-            <div class="empty-state-icon">📭</div>
-            <h3 style="color: #e2e8f0;">Your reading list is empty</h3>
-            <p style="color: #94a3b8;">Go to Search or 🧠 My AI tab and save some papers!</p>
+        <div class="empty-state-pro">
+            <h3>Library Empty</h3>
+            <p>Search for papers and add them to your library.</p>
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.success(f"📚 You have **{len(saved_papers)}** saved papers")
+        st.info(f"**{len(saved_papers)}** papers in your library")
         
         for paper in saved_papers:
             with st.container():
@@ -1439,19 +2121,19 @@ elif page == "📚 My Reading List":
                     render_paper_card(paper)
                 
                 with col2:
-                    if st.button("🗑️ Remove", key=f"remove_{paper.arxiv_id}", use_container_width=True):
+                    if st.button("Remove", key=f"remove_{paper.arxiv_id}", use_container_width=True):
                         db.remove_from_reading_list(paper.arxiv_id)
-                        st.toast(f"Removed from reading list!")
+                        st.toast("Removed from library")
                         st.rerun()
                          
 
-elif page == "🧠 My AI":
+elif page == "Model":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        🧠 My Personal AI
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Personalized Ranking Model
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Your AI learns from your labels to find papers you'll love
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Train and manage your personalized paper recommendation model
     </p>
     """, unsafe_allow_html=True)
     
@@ -1462,47 +2144,47 @@ elif page == "🧠 My AI":
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        render_metric_card("Labeled Papers", str(labeled_count), "🏷️")
+        render_metric_card("Labeled Papers", str(labeled_count))
     with col2:
-        render_metric_card("Relevant", str(positive_count), "👍")
+        render_metric_card("Relevant", str(positive_count))
     with col3:
-        render_metric_card("Not Relevant", str(negative_count), "👎")
+        render_metric_card("Not Relevant", str(negative_count))
     with col4:
-        status_icon = "✅" if ml_engine.is_trained else "⏳"
-        render_metric_card("Model Status", "Trained" if ml_engine.is_trained else "Not Yet", status_icon)
+        status = "Trained" if ml_engine.is_trained else "Untrained"
+        render_metric_card("Model Status", status)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Training section
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 20px;">🎓 Train Your AI</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Train Model</h2>', unsafe_allow_html=True)
     
     can_train = labeled_count >= 5 and positive_count >= 2 and negative_count >= 2
     
     if not can_train:
         st.warning(f"""
-        **Need more labels to train!**
-        - ✅ Labeled: {labeled_count}/5 minimum
-        - 👍 Relevant: {positive_count}/2 minimum  
-        - 👎 Not Relevant: {negative_count}/2 minimum
+        **Additional labels required:**
+        - Labeled: {labeled_count}/5 minimum
+        - Relevant: {positive_count}/2 minimum  
+        - Not Relevant: {negative_count}/2 minimum
         
-        Go to **🏷️ Label Papers** to label more!
+        Go to **Training Data** to label more papers.
         """)
     else:
-        st.success(f"✅ Ready to train! You have {labeled_count} labeled papers.")
+        st.success(f"Ready to train with {labeled_count} labeled papers.")
         
-        if st.button("🚀 Train My AI", use_container_width=True, type="primary"):
-            with st.spinner("Training your personal AI..."):
+        if st.button("Train Model", use_container_width=True, type="primary"):
+            with st.spinner("Training model..."):
                 result = ml_engine.train(min_samples=5)
             
             if result.get('success'):
                 st.balloons()
                 st.success(f"""
-                **🎉 Training Complete!**
+                **Training Complete**
                 - Accuracy: {result['accuracy']:.1%}
                 - Precision: {result['precision']:.1%}
                 - F1 Score: {result['f1']:.1%}
-                - Trained on: {result['samples']} papers
+                - Training samples: {result['samples']}
                 """)
                 st.rerun()
             else:
@@ -1518,7 +2200,7 @@ elif page == "🧠 My AI":
         
         with col1:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #e2e8f0; margin: 0 0 20px;">📈 Model Performance</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="color: #e2e8f0; margin: 0 0 16px; font-size: 18px;">Model Metrics</h3>', unsafe_allow_html=True)
             
             prefs = db.get_preferences()
             if prefs.model_accuracy:
@@ -1530,7 +2212,7 @@ elif page == "🧠 My AI":
         
         with col2:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown('<h3 style="color: #e2e8f0; margin: 0 0 20px;">🔑 What Your AI Learned</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="color: #e2e8f0; margin: 0 0 16px; font-size: 18px;">Learned Features</h3>', unsafe_allow_html=True)
             
             model_state = db.get_active_model()
             if model_state:
@@ -1539,13 +2221,13 @@ elif page == "🧠 My AI":
                     top_pos = json.loads(model_state.top_positive_features or '[]')
                     top_neg = json.loads(model_state.top_negative_features or '[]')
                     
-                    st.markdown("**Topics you like:**")
+                    st.markdown("**Positive indicators:**")
                     for item in top_pos[:5]:
-                        st.markdown(f"- 👍 {item['word']}")
+                        st.markdown(f"- {item['word']}")
                     
-                    st.markdown("**Topics you avoid:**")
+                    st.markdown("**Negative indicators:**")
                     for item in top_neg[:5]:
-                        st.markdown(f"- 👎 {item['word']}")
+                        st.markdown(f"- {item['word']}")
                 except:
                     pass
             
@@ -1554,8 +2236,8 @@ elif page == "🧠 My AI":
         # Recommendations
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
-        <h2 style="font-size: 32px; margin: 32px 0 24px; color: #e2e8f0;">✨ AI Recommendations</h2>
-        <p style="color: #94a3b8; margin-bottom: 24px;">Papers your AI thinks you'll love</p>
+        <h2 style="font-size: 20px; margin: 24px 0 16px; color: #e2e8f0;">Model Recommendations</h2>
+        <p style="color: #64748b; margin-bottom: 16px;">Papers ranked by predicted relevance</p>
         """, unsafe_allow_html=True)
         
         recommendations = ml_engine.get_recommendations(limit=5)
@@ -1564,7 +2246,6 @@ elif page == "🧠 My AI":
             for idx, paper in enumerate(recommendations):
                 pred_score = ml_engine.predict_relevance(paper)
                 
-                # Check if this paper is saved
                 current_paper = db.get_paper_by_id(paper.arxiv_id)
                 is_already_saved = current_paper.is_saved if current_paper else False
                 
@@ -1577,9 +2258,9 @@ elif page == "🧠 My AI":
                         if pred_score:
                             color = "#10b981" if pred_score >= 0.7 else "#3b82f6"
                             st.markdown(f"""
-                            <div style="background: {color}; color: white; padding: 12px 16px; 
-                                        border-radius: 12px; text-align: center; font-weight: 700;">
-                                🤖 {pred_score:.0%}
+                            <div style="background: {color}; color: white; padding: 10px 14px; 
+                                        border-radius: 8px; text-align: center; font-weight: 600;">
+                                {pred_score:.0%}
                             </div>
                             """, unsafe_allow_html=True)
                     
@@ -1587,144 +2268,142 @@ elif page == "🧠 My AI":
                     
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
-                        st.link_button("📄 PDF", paper.pdf_url or "#", use_container_width=True)
+                        st.link_button("View PDF", paper.pdf_url or "#", use_container_width=True)
                     with col2:
-                        if st.button("👍 Relevant", key=f"ai_rel_{paper.arxiv_id}_{idx}"):
+                        if st.button("Relevant", key=f"ai_rel_{paper.arxiv_id}_{idx}"):
                             db.label_paper(paper.arxiv_id, 1)
-                            st.toast("✅ Labeled as relevant!")
+                            st.toast("Labeled as relevant")
                             st.rerun()
                     with col3:
-                        if st.button("👎 Not Relevant", key=f"ai_not_{paper.arxiv_id}_{idx}"):
+                        if st.button("Not Relevant", key=f"ai_not_{paper.arxiv_id}_{idx}"):
                             db.label_paper(paper.arxiv_id, 0)
-                            st.toast("❌ Labeled as not relevant!")
+                            st.toast("Labeled as not relevant")
                             st.rerun()
                     with col4:
                         if is_already_saved:
-                            st.success("✓ Saved")
+                            st.success("Saved")
                         else:
-                            if st.button("💾 Save", key=f"ai_save_{paper.arxiv_id}_{idx}", use_container_width=True):
+                            if st.button("Save", key=f"ai_save_{paper.arxiv_id}_{idx}", use_container_width=True):
                                 success = db.save_to_reading_list(paper.arxiv_id)
                                 if success:
-                                    st.toast("✅ Saved to reading list!")
+                                    st.toast("Added to library")
                                     st.balloons()
                                     st.rerun()
                                 else:
-                                    st.error("Failed to save - paper might not exist")
+                                    st.error("Failed to save")
                     
                     st.divider()
         else:
-            st.info("Label more papers to get personalized recommendations!")
+            st.info("Label more papers to generate personalized recommendations.")
         
-        # Score all papers button
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Re-score All Papers with My AI", use_container_width=True):
-            with st.spinner("Scoring all papers..."):
+        if st.button("Re-score All Papers", use_container_width=True):
+            with st.spinner("Scoring papers..."):
                 scores = ml_engine.score_all_papers()
-            st.success(f"✅ Updated scores for {len(scores)} papers!")
+            st.success(f"Updated scores for {len(scores)} papers")
     
-    # Your interests
+    # Research interests
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 20px;">📊 Your Research Interests</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Research Interest Profile</h2>', unsafe_allow_html=True)
     
     interests = db.get_user_interests()
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**📂 Top Categories**")
+        st.markdown("**Top Categories**")
         if interests['categories']:
             for cat, count in list(interests['categories'].items())[:8]:
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; padding: 10px 16px; 
-                            background: rgba(139, 92, 246, 0.1); border-radius: 8px; margin: 8px 0;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 12px; 
+                            background: rgba(59, 130, 246, 0.08); border-radius: 6px; margin: 6px 0;">
                     <span style="color: #e2e8f0;">{cat}</span>
-                    <span style="color: #8b5cf6; font-weight: 700;">{count}</span>
+                    <span style="color: #3b82f6; font-weight: 600;">{count}</span>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Label some papers to see categories!")
+            st.info("Label papers to see category preferences")
     
     with col2:
-        st.markdown("**🔑 Top Keywords**")
+        st.markdown("**Top Keywords**")
         if interests['keywords']:
             keywords_html = ' '.join([
-                f'<span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 6px 14px; border-radius: 20px; margin: 4px; display: inline-block; font-size: 14px;">{kw}</span>'
+                f'<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 4px 12px; border-radius: 16px; margin: 3px; display: inline-block; font-size: 13px;">{kw}</span>'
                 for kw in interests['keywords'][:15]
             ])
             st.markdown(keywords_html, unsafe_allow_html=True)
         else:
-            st.info("Save and label more papers to see your keywords!")
+            st.info("Label papers to see keyword preferences")
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "⚙️ Settings":
+elif page == "Settings":
     st.markdown("""
-    <h1 style='text-align: center; font-size: 56px; margin: 60px 0 24px;'>
-        ⚙️ Settings
+    <h1 style='text-align: center; font-size: 40px; margin: 40px 0 16px;'>
+        Settings
     </h1>
-    <p style='text-align: center; font-size: 20px; color: #94a3b8; margin-bottom: 60px;'>
-        Configure your Paper Discovery Engine
+    <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
+        Configure your Research Intelligence Platform
     </p>
     """, unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📧 Email Digest", "🔔 Notifications", "💾 Database", "📋 Commands"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Email Digest", "Notifications", "Database", "Commands", "Appearance"])
     
     # =========================================================================
     # TAB 1: EMAIL DIGEST
     # =========================================================================
     with tab1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 24px;">📬 Email Digest Settings</h2>', unsafe_allow_html=True)
-        st.markdown('<p style="color: #94a3b8; margin-bottom: 24px;">Get new papers matching your interests delivered to your inbox</p>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Email Digest Configuration</h2>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #64748b; margin-bottom: 16px;">Receive curated paper recommendations via email</p>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         prefs = db.get_preferences()
         
         with st.form("email_settings"):
-            st.markdown("### 📧 Your Email")
-            email = st.text_input("Email Address", value=prefs.email or "", placeholder="your@email.com")
+            st.markdown("### Email Address")
+            email = st.text_input("Email", value=prefs.email or "", placeholder="your@email.com", label_visibility="collapsed")
             
-            st.markdown("### 📅 Digest Frequency")
+            st.markdown("### Digest Schedule")
             col1, col2 = st.columns(2)
             with col1:
                 freq_options = ["none", "daily", "weekly"]
                 current_freq = prefs.digest_frequency if prefs.digest_frequency in freq_options else "weekly"
-                frequency = st.selectbox("How often?", freq_options, index=freq_options.index(current_freq))
+                frequency = st.selectbox("Frequency", freq_options, index=freq_options.index(current_freq))
             with col2:
                 if frequency == "weekly":
                     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                    digest_day = st.selectbox("Which day?", days, index=prefs.digest_day or 0)
+                    digest_day = st.selectbox("Day", days, index=prefs.digest_day or 0)
                     digest_day_idx = days.index(digest_day)
                 else:
                     digest_day_idx = 0
             
-            st.markdown("### ⚙️ Digest Options")
+            st.markdown("### Digest Options")
             col1, col2 = st.columns(2)
             with col1:
                 min_score = st.slider("Minimum relevance score", 0.0, 1.0, prefs.min_relevance_score or 0.5, 0.1, format="%.0f%%")
             with col2:
-                max_papers = st.number_input("Max papers per digest", 5, 30, prefs.max_papers_per_digest or 10)
+                max_papers = st.number_input("Maximum papers per digest", 5, 30, prefs.max_papers_per_digest or 10)
             
-            st.markdown("### 🔐 SMTP Settings")
-            st.info("For Gmail: Use an App Password, not your regular password. [Learn more](https://support.google.com/accounts/answer/185833)")
+            st.markdown("### SMTP Configuration")
+            st.info("For Gmail: Use an App Password. [Learn more](https://support.google.com/accounts/answer/185833)")
             
             col1, col2 = st.columns(2)
             with col1:
                 smtp_host = st.text_input("SMTP Host", value=prefs.smtp_host or "smtp.gmail.com")
-                smtp_user = st.text_input("SMTP Username (email)", value=prefs.smtp_user or "")
+                smtp_user = st.text_input("SMTP Username", value=prefs.smtp_user or "")
             with col2:
                 smtp_port = st.number_input("SMTP Port", value=prefs.smtp_port or 587)
                 smtp_password = st.text_input("SMTP Password", type="password", value="")
             
             col1, col2 = st.columns(2)
             with col1:
-                save_btn = st.form_submit_button("💾 Save Settings", use_container_width=True)
+                save_btn = st.form_submit_button("Save Settings", use_container_width=True, type="primary")
             with col2:
-                test_btn = st.form_submit_button("📧 Send Test Email", use_container_width=True)
+                test_btn = st.form_submit_button("Send Test Email", use_container_width=True)
         
         if save_btn:
-            # Clean all form inputs before saving
             email = clean_form_input(email)
             smtp_host = clean_form_input(smtp_host)
             smtp_user = clean_form_input(smtp_user)
@@ -1745,17 +2424,16 @@ elif page == "⚙️ Settings":
             if smtp_user and smtp_password:
                 email_service.configure(smtp_host, smtp_port, smtp_user, smtp_password)
             
-            st.success("✅ Settings saved!")
+            st.success("Settings saved")
 
         
         if test_btn:
-            # Clean email input
             email = clean_form_input(email)
             
             if not email:
-                st.error("Please enter your email address first!")
+                st.error("Please enter your email address")
             elif not (smtp_user or prefs.smtp_user) or not (smtp_password or prefs.smtp_password):
-                st.error("Please configure SMTP settings first!")
+                st.error("Please configure SMTP settings")
             else:
                 if smtp_user and smtp_password:
                     email_service.configure(smtp_host, smtp_port, smtp_user, smtp_password)
@@ -1764,49 +2442,47 @@ elif page == "⚙️ Settings":
                     success, message = email_service.send_test_email(email)
                 
                 if success:
-                    st.success(f"✅ {message}")
+                    st.success(message)
                     st.balloons()
                 else:
-                    st.error(f"❌ {message}")
+                    st.error(message)
         
-        # Manual digest send
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📤 Send Digest Now")
+        st.markdown("### Send Digest Manually")
         
         col1, col2 = st.columns([1, 2])
         with col1:
             days_back = st.selectbox("Papers from last", [1, 3, 7, 14, 30], index=2)
         with col2:
-            if st.button("📬 Send Digest Now", use_container_width=True):
+            if st.button("Send Digest Now", use_container_width=True):
                 prefs = db.get_preferences()
                 if not prefs.email:
-                    st.error("Please set your email address first!")
+                    st.error("Please set your email address")
                 else:
                     papers = db.get_papers_for_digest(since_days=days_back)
                     if not papers:
-                        st.warning("No new relevant papers found!")
+                        st.warning("No relevant papers found")
                     else:
                         with st.spinner(f"Sending digest with {len(papers)} papers..."):
                             success, message = email_service.send_digest(prefs.email, papers, "manual")
                         if success:
-                            st.success(f"✅ {message}")
+                            st.success(message)
                             st.balloons()
                         else:
-                            st.error(f"❌ {message}")
+                            st.error(message)
         
-        # Digest history
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📜 Digest History")
+        st.markdown("### Digest History")
         
         history = db.get_digest_history(limit=10)
         if history:
             for h in history:
-                status_icon = "✅" if h.status == "sent" else "❌"
+                status_icon = "✓" if h.status == "sent" else "✗"
                 st.markdown(f"""
-                <div style="display: flex; justify-content: space-between; padding: 12px 16px;
-                            background: rgba(139, 92, 246, 0.1); border-radius: 8px; margin: 8px 0;">
+                <div style="display: flex; justify-content: space-between; padding: 10px 14px;
+                            background: rgba(59, 130, 246, 0.08); border-radius: 6px; margin: 6px 0;">
                     <span style="color: #e2e8f0;">{status_icon} {h.digest_type.title()} - {h.paper_count} papers</span>
-                    <span style="color: #94a3b8;">{h.sent_at.strftime('%Y-%m-%d %H:%M')}</span>
+                    <span style="color: #64748b;">{h.sent_at.strftime('%Y-%m-%d %H:%M')}</span>
                 </div>
                 """, unsafe_allow_html=True)
         else:
@@ -1817,101 +2493,143 @@ elif page == "⚙️ Settings":
     # =========================================================================
     with tab2:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 24px;">🔔 Notification Settings</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Notification Settings</h2>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         prefs = db.get_preferences()
         
-        notify_high = st.toggle("🔥 Notify for high-relevance papers (90%+)", value=prefs.notify_high_relevance)
-        auto_train = st.toggle("🤖 Auto-train AI when new labels added", value=prefs.auto_train)
+        notify_high = st.toggle("Notify for high-relevance papers (90%+)", value=prefs.notify_high_relevance)
+        auto_train = st.toggle("Auto-train model when new labels added", value=prefs.auto_train)
         
-        if st.button("💾 Save Notification Settings"):
+        if st.button("Save Notification Settings"):
             db.update_preferences(notify_high_relevance=notify_high, auto_train=auto_train)
-            st.success("✅ Saved!")
+            st.success("Saved")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📂 Track Specific Topics")
-        st.info("Select categories to focus your digest on specific areas")
+        st.markdown("### Category Tracking")
+        st.info("Select categories to focus your digest on specific research areas")
         
         all_categories = db.get_categories()
         tracked = prefs.get_tracked_categories()
         
         selected_cats = st.multiselect(
-            "Categories to track",
+            "Tracked Categories",
             all_categories,
             default=[c for c in tracked if c in all_categories]
         )
         
-        if st.button("💾 Save Tracked Categories"):
+        if st.button("Save Tracked Categories"):
             prefs.set_tracked_categories(selected_cats)
             db.session.commit()
-            st.success(f"✅ Now tracking {len(selected_cats)} categories!")
+            st.success(f"Tracking {len(selected_cats)} categories")
     
     # =========================================================================
     # TAB 3: DATABASE
     # =========================================================================
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 24px;">💾 Database Status</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Database Status</h2>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         stats = db.get_stats()
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            render_metric_card("Total Papers", f"{stats.get('total_papers', 0):,}", "📄")
+            render_metric_card("Total Papers", f"{stats.get('total_papers', 0):,}")
         with col2:
-            render_metric_card("Labeled", f"{stats.get('labeled_papers', 0):,}", "🏷️")
+            render_metric_card("Labeled", f"{stats.get('labeled_papers', 0):,}")
         with col3:
-            render_metric_card("Saved", f"{stats.get('saved_papers', 0):,}", "💾")
+            render_metric_card("Saved", f"{stats.get('saved_papers', 0):,}")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"**📁 Database Path:** `{DB_PATH}`")
+        st.markdown(f"**Database Path:** `{DB_PATH}`")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🧠 AI Model Status")
+        st.markdown("### Model Status")
         
         model_state = db.get_active_model()
         if model_state:
             st.success(f"""
-            ✅ **Model Active**
+            **Model Active**
             - Trained: {model_state.trained_at.strftime('%Y-%m-%d %H:%M') if model_state.trained_at else 'Unknown'}
             - Samples: {model_state.training_samples}
             - Accuracy: {f"{model_state.accuracy:.1%}" if model_state.accuracy else 'N/A'}
             """)
         else:
-            st.warning("No trained model yet. Go to 🧠 My AI to train!")
+            st.warning("No trained model. Go to Model page to train.")
     
     # =========================================================================
     # TAB 4: COMMANDS
     # =========================================================================
     with tab4:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 24px;">📋 Command Reference</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 style="color: #e2e8f0; margin: 0 0 16px; font-size: 20px;">Command Reference</h2>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         commands = [
-            ("🔄 Fetch New Papers", "python src/daily_run.py", "Fetches latest papers from arXiv"),
-            ("📧 Run Scheduler", "python src/scheduler.py", "Runs background digest scheduler"),
+            ("Fetch New Papers", "python src/daily_run.py", "Fetches latest papers from arXiv"),
+            ("Run Scheduler", "python src/scheduler.py", "Runs background digest scheduler"),
         ]
         
         for title, cmd, desc in commands:
             st.markdown(f"""
-            <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2);
-                        border-radius: 16px; padding: 24px; margin: 16px 0;">
-                <div style="font-weight: 700; color: #e2e8f0; font-size: 18px; margin-bottom: 12px;">{title}</div>
-                <code style="display: block; background: #0f172a; color: #22d3ee; padding: 14px 18px; 
-                            border-radius: 10px; font-size: 14px; margin: 12px 0;">{cmd}</code>
-                <div style="font-size: 14px; color: #94a3b8; margin-top: 8px;">{desc}</div>
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);
+                        border-radius: 12px; padding: 20px; margin: 12px 0;">
+                <div style="font-weight: 600; color: #e2e8f0; font-size: 16px; margin-bottom: 10px;">{title}</div>
+                <code style="display: block; background: #0f172a; color: #60a5fa; padding: 12px 16px; 
+                            border-radius: 8px; font-size: 14px; margin: 10px 0;">{cmd}</code>
+                <div style="font-size: 14px; color: #64748b; margin-top: 8px;">{desc}</div>
             </div>
             """, unsafe_allow_html=True)
+    
+        # =========================================================================
+    # TAB 5: APPEARANCE
+    # =========================================================================
+    with tab5:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown('<h2 style="margin: 0 0 16px; font-size: 20px;">Appearance</h2>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown("### Theme")
+        
+        current_theme = st.session_state.theme
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            dark_label = "✓ Dark" if current_theme == 'dark' else "Dark"
+            if st.button(
+                dark_label,
+                use_container_width=True,
+                type="primary" if current_theme == 'dark' else "secondary"
+            ):
+                st.session_state.theme = 'dark'
+                st.rerun()
+        
+        with col2:
+            light_label = "✓ Light" if current_theme == 'light' else "Light"
+            if st.button(
+                light_label,
+                use_container_width=True,
+                type="primary" if current_theme == 'light' else "secondary"
+            ):
+                st.session_state.theme = 'light'
+                st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        if current_theme == 'dark':
+            st.info("**Dark theme active** — Optimized for low-light environments and reduced eye strain.")
+        else:
+            st.info("**Light theme active** — High contrast for maximum readability in bright environments.")
+
 # =============================================================================
 # FOOTER
 # =============================================================================
 
 st.divider()
 st.markdown(f"""
-<div style="text-align: center; padding: 32px 0; color: #64748b; font-size: 14px;">
-    Paper Discovery Engine  • Built with ❤️ using Python & Streamlit • {datetime.now().year}
+<div style="text-align: center; padding: 24px 0; color: #475569; font-size: 13px;">
+    Research Intelligence Platform · {datetime.now().year}
 </div>
 """, unsafe_allow_html=True)
