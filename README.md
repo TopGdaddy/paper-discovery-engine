@@ -9,4 +9,4 @@ AI-powered research paper discovery system.
 - 🏷️ Label & train your AI
 
 ## Live App
-🌐 [Visit Dashboard]([https://your-app.streamlit.app](https://paper-discovery-engine-qea3sg97j8mfqlhwtttu86.streamlit.app/))
+🌐 [Visit Dashboard](https://your-app.streamlit.app](https://paper-discovery-engine-qea3sg97j8mfqlhwtttu86.streamlit.app/)
