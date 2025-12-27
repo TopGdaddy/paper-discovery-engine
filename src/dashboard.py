@@ -2186,6 +2186,14 @@ elif page == "Model":
                 - F1 Score: {result['f1']:.1%}
                 - Training samples: {result['samples']}
                 """)
+
+                # Add the warning here if model may be unreliable
+                if labeled_count < 20:
+                    st.warning(f"""
+                    **Model may be unreliable** — You have {labeled_count} labeled papers.
+                    
+                    For best results, label at least **20 papers** (10 relevant + 10 not relevant).
+                    """)
                 st.rerun()
             else:
                 st.error(f"Training failed: {result.get('error')}")
