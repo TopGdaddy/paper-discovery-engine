@@ -2391,7 +2391,11 @@ elif page == "Settings":
             st.markdown("### Digest Options")
             col1, col2 = st.columns(2)
             with col1:
-                min_score = st.slider("Minimum relevance score", 0.0, 1.0, prefs.min_relevance_score or 0.5, 0.1, format="%.0f%%")
+                # Convert stored decimal (0.5) to percentage (50) for display
+                current_pct = int((prefs.min_relevance_score or 0.5) * 100)
+                min_score_pct = st.slider("Minimum relevance score", 0, 100, current_pct, 5, format="%d%%")
+                # Convert back to decimal for storage
+                min_score = min_score_pct / 100.0
             with col2:
                 max_papers = st.number_input("Maximum papers per digest", 5, 30, prefs.max_papers_per_digest or 10)
             
