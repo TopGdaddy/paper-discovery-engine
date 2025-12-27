@@ -110,27 +110,78 @@ class PaperMLEngine:
                 random_state=42
             )
             
+                        # For proper evaluation, use train/test split
+            from sklearn.model_selection import train_test_split
+            
             if len(texts) >= 10:
+                # Split data: 80% train, 20% test
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, 
+                    test_size=0.2, 
+                    random_state=42,
+                    stratify=y  # Keep class balance
+                )
+                
+                # Train on training set
+                self.model.fit(X_train, y_train)
+                
+                # Evaluate on TEST set (unseen data)
+                y_pred_test = self.model.predict(X_test)
+                test_accuracy = accuracy_score(y_test, y_pred_test)
+                test_precision = precision_score(y_test, y_pred_test, zero_division=0)
+                test_recall = recall_score(y_test, y_pred_test, zero_division=0)
+                test_f1 = f1_score(y_test, y_pred_test, zero_division=0)
+                
+                # Also do cross-validation for more robust estimate
                 cv_scores = cross_val_score(self.model, X, y, cv=min(5, len(texts)//2))
                 cv_accuracy = cv_scores.mean()
+                
+                # Now retrain on ALL data for production use
+                self.model.fit(X, y)
+                
             else:
-                cv_accuracy = None
+                # Too few samples - use cross-validation only
+                if len(texts) >= 5:
+                    cv_scores = cross_val_score(self.model, X, y, cv=min(3, len(texts)))
+                    cv_accuracy = cv_scores.mean()
+                    test_accuracy = cv_accuracy  # Use CV as estimate
+                    test_precision = 0.0
+                    test_recall = 0.0
+                    test_f1 = 0.0
+                else:
+                    cv_accuracy = None
+                    test_accuracy = 0.0
+                    test_precision = 0.0
+                    test_recall = 0.0
+                    test_f1 = 0.0
+                
+                # Train on all data
+                self.model.fit(X, y)
             
-            self.model.fit(X, y)
-            y_pred = self.model.predict(X)
+            # Training set predictions (for feature importance only)
+            y_pred_train = self.model.predict(X)
             
             metrics = {
                 'success': True,
                 'samples': len(texts),
                 'positive_samples': sum(labels),
                 'negative_samples': len(labels) - sum(labels),
-                'accuracy': accuracy_score(y, y_pred),
-                'precision': precision_score(y, y_pred, zero_division=0),
-                'recall': recall_score(y, y_pred, zero_division=0),
-                'f1': f1_score(y, y_pred, zero_division=0),
+                'accuracy': test_accuracy,  # Now using TEST accuracy
+                'precision': test_precision,
+                'recall': test_recall,
+                'f1': test_f1,
                 'cv_accuracy': cv_accuracy,
+                'training_accuracy': accuracy_score(y, y_pred_train),  # Keep for reference
                 'trained_at': datetime.utcnow()
             }
+
+            # After showing metrics
+                if labeled_count < 20:
+                    st.warning(f"""
+                    **Model may be unreliable** — You have {labeled_count} labeled papers.
+                    
+                    For best results, label at least **20 papers** (10 relevant + 10 not relevant).
+                    """)
             
             feature_names = self.vectorizer.get_feature_names_out()
             coefficients = self.model.coef_[0]
