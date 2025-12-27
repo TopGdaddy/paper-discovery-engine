@@ -1890,7 +1890,8 @@ elif page == "Search":
                                     abs_url=paper['abs_url'],
                                     primary_category=paper['category'],
                                     published=paper['published'],
-                                    relevance_score=0.99
+                                    relevance_score=0.99,
+                                    is_saved=True
                                 )
                                 
                                 db.session.add(new_paper)
