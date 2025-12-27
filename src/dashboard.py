@@ -1765,86 +1765,509 @@ elif page == "Search":
         Search Publications
     </h1>
     <p style='text-align: center; font-size: 16px; color: #64748b; margin-bottom: 40px;'>
-        Search arXiv across all scientific domains
+        Search across multiple scientific databases worldwide
     </p>
     """, unsafe_allow_html=True)
 
+    # =========================================================================
+    # SESSION STATE
+    # =========================================================================
     if 'search_results' not in st.session_state:
         st.session_state.search_results = []
     if 'saved_papers' not in st.session_state:
         st.session_state.saved_papers = set()
     if 'just_saved' not in st.session_state:
         st.session_state.just_saved = None
+    if 'search_source' not in st.session_state:
+        st.session_state.search_source = "arXiv"
 
     if st.session_state.just_saved:
         st.balloons()
         st.toast(f"Added: {st.session_state.just_saved}")
         st.session_state.just_saved = None
 
-    categories = {
-        "All Fields": "",
-        "cs.AI - Artificial Intelligence": "cs.AI",
-        "cs.LG - Machine Learning": "cs.LG",
-        "cs.CV - Computer Vision": "cs.CV",
-        "physics - All Physics": "physics",
-        "quant-ph - Quantum Computing": "quant-ph",
-        "q-bio - Quantitative Biology": "q-bio",
-        "math - All Mathematics": "math",
-        "q-fin - Quantitative Finance": "q-fin",
-    }
-
-    with st.form(key="search_form"):
-        query = st.text_input("Search Query", placeholder="transformer, quantum computing, CRISPR...", label_visibility="collapsed")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            selected_cat = st.selectbox("Field", list(categories.keys()), index=0)
-        with col2:
-            num_results = st.selectbox("Results", [10, 20, 30], index=1)
-        submit = st.form_submit_button("Search arXiv", use_container_width=True, type="primary")
-
-    if submit and query.strip():
-        cat_code = categories[selected_cat]
-        cat_query = f"+cat:{cat_code}" if cat_code else ""
+    # =========================================================================
+    # SEARCH FUNCTIONS
+    # =========================================================================
+    
+    def search_arxiv(query, category="", max_results=20):
+        """Search arXiv API"""
+        import urllib.parse
+        import time
         
-        with st.spinner("Searching arXiv..."):
-            import time, urllib.parse
-            time.sleep(3)
+        time.sleep(1)  # Rate limiting
+        
+        cat_query = f"+cat:{category}" if category else ""
+        encoded = urllib.parse.quote(query)
+        url = f"https://export.arxiv.org/api/query?search_query=all:{encoded}{cat_query}&max_results={max_results}&sortBy=submittedDate"
+        
+        headers = {'User-Agent': 'ResearchPlatform/2.0'}
+        
+        try:
+            r = requests.get(url, headers=headers, timeout=20)
+            feed = feedparser.parse(r.content)
             
-            headers = {'User-Agent': 'ResearchPlatform/1.0'}
-            encoded = urllib.parse.quote(query)
-            url = f"https://export.arxiv.org/api/query?search_query=all:{encoded}{cat_query}&max_results={num_results}&sortBy=submittedDate"
-            
-            try:
-                r = requests.get(url, headers=headers, timeout=15)
-                feed = feedparser.parse(r.content)
+            results = []
+            for entry in feed.entries:
+                arxiv_id = entry.link.split("/")[-1]
                 
-                st.session_state.search_results = []
-                for entry in feed.entries:
-                    arxiv_id = entry.link.split("/")[-1]
-                    pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-                    
-                    published_date = datetime.now()
-                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                published_date = datetime.now()
+                if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                    try:
                         published_date = datetime(*entry.published_parsed[:6])
+                    except:
+                        pass
+                
+                results.append({
+                    'source': 'arXiv',
+                    'paper_id': arxiv_id,
+                    'arxiv_id': arxiv_id,
+                    'title': entry.title.replace('\n', ' ').strip(),
+                    'authors': ', '.join([a.name for a in entry.authors]) if hasattr(entry, 'authors') else "Unknown",
+                    'summary': entry.summary.replace('\n', ' ').strip(),
+                    'pdf_url': f"https://arxiv.org/pdf/{arxiv_id}.pdf",
+                    'abs_url': entry.link,
+                    'category': entry.tags[0].term if entry.tags else "unknown",
+                    'published': published_date,
+                    'venue': 'arXiv Preprint'
+                })
+            
+            return results
+        except Exception as e:
+            print(f"arXiv error: {e}")
+            return []
+    
+    def search_semantic_scholar(query, max_results=20, fields_of_study=None):
+        """Search Semantic Scholar API - covers ALL sciences"""
+        url = "https://api.semanticscholar.org/graph/v1/paper/search"
+        
+        params = {
+            "query": query,
+            "limit": max_results,
+            "fields": "paperId,title,abstract,authors,year,venue,url,openAccessPdf,fieldsOfStudy,citationCount"
+        }
+        
+        if fields_of_study:
+            params["fieldsOfStudy"] = fields_of_study
+        
+        headers = {"Accept": "application/json"}
+        
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=20)
+            
+            if response.status_code == 200:
+                data = response.json()
+                papers = data.get("data", [])
+                
+                results = []
+                for paper in papers:
+                    # Get PDF URL if available
+                    pdf_url = None
+                    if paper.get('openAccessPdf'):
+                        pdf_url = paper['openAccessPdf'].get('url')
                     
-                    st.session_state.search_results.append({
-                        'arxiv_id': arxiv_id,
-                        'title': entry.title,
-                        'authors': ', '.join([a.name for a in entry.authors]) if hasattr(entry, 'authors') else "Unknown",
-                        'summary': entry.summary,
-                        'pdf_url': pdf_url,
-                        'abs_url': entry.link,
-                        'category': entry.tags[0].term if entry.tags else "unknown",
-                        'published': published_date
+                    # Get authors
+                    authors = "Unknown"
+                    if paper.get('authors'):
+                        author_names = [a.get('name', '') for a in paper['authors'][:5]]
+                        authors = ', '.join(author_names)
+                        if len(paper['authors']) > 5:
+                            authors += f" (+{len(paper['authors']) - 5} more)"
+                    
+                    # Get fields of study
+                    fields = paper.get('fieldsOfStudy') or []
+                    category = fields[0] if fields else "Unknown"
+                    
+                    results.append({
+                        'source': 'Semantic Scholar',
+                        'paper_id': paper.get('paperId', ''),
+                        'arxiv_id': f"s2-{paper.get('paperId', '')[:12]}",  # Create pseudo-ID
+                        'title': paper.get('title', 'Untitled'),
+                        'authors': authors,
+                        'summary': paper.get('abstract') or 'No abstract available.',
+                        'pdf_url': pdf_url or paper.get('url', '#'),
+                        'abs_url': f"https://www.semanticscholar.org/paper/{paper.get('paperId', '')}",
+                        'category': category,
+                        'published': datetime(paper.get('year', 2024), 1, 1) if paper.get('year') else datetime.now(),
+                        'venue': paper.get('venue') or 'Unknown Venue',
+                        'citations': paper.get('citationCount', 0)
                     })
                 
-                st.success(f"Found {len(st.session_state.search_results)} papers")
+                return results
+            else:
+                print(f"Semantic Scholar API error: {response.status_code}")
+                return []
                 
-            except Exception as e:
-                st.error("arXiv request timeout - please try again")
-                st.session_state.search_results = []
+        except Exception as e:
+            print(f"Semantic Scholar error: {e}")
+            return []
+    
+    def search_pubmed(query, max_results=20):
+        """Search PubMed API - for biomedical literature"""
+        # Step 1: Search for IDs
+        search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+        search_params = {
+            "db": "pubmed",
+            "term": query,
+            "retmax": max_results,
+            "retmode": "json",
+            "sort": "relevance"
+        }
+        
+        try:
+            search_response = requests.get(search_url, params=search_params, timeout=15)
+            search_data = search_response.json()
+            
+            id_list = search_data.get("esearchresult", {}).get("idlist", [])
+            
+            if not id_list:
+                return []
+            
+            # Step 2: Fetch details
+            fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+            fetch_params = {
+                "db": "pubmed",
+                "id": ",".join(id_list),
+                "retmode": "json"
+            }
+            
+            fetch_response = requests.get(fetch_url, params=fetch_params, timeout=15)
+            fetch_data = fetch_response.json()
+            
+            results = []
+            for pmid in id_list:
+                paper = fetch_data.get("result", {}).get(pmid, {})
+                
+                if not paper or paper == "uids":
+                    continue
+                
+                # Get authors
+                authors = "Unknown"
+                author_list = paper.get("authors", [])
+                if author_list:
+                    author_names = [a.get("name", "") for a in author_list[:5]]
+                    authors = ", ".join(author_names)
+                    if len(author_list) > 5:
+                        authors += f" (+{len(author_list) - 5} more)"
+                
+                # Parse date
+                pub_date = datetime.now()
+                try:
+                    pub_date_str = paper.get("pubdate", "")
+                    if pub_date_str:
+                        year = int(pub_date_str.split()[0])
+                        pub_date = datetime(year, 1, 1)
+                except:
+                    pass
+                
+                results.append({
+                    'source': 'PubMed',
+                    'paper_id': pmid,
+                    'arxiv_id': f"pm-{pmid}",  # Create pseudo-ID
+                    'title': paper.get("title", "Untitled"),
+                    'authors': authors,
+                    'summary': paper.get("title", ""),  # PubMed summary needs separate fetch
+                    'pdf_url': f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    'abs_url': f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    'category': paper.get("fulljournalname", "Biomedical"),
+                    'published': pub_date,
+                    'venue': paper.get("source", "Unknown Journal")
+                })
+            
+            return results
+            
+        except Exception as e:
+            print(f"PubMed error: {e}")
+            return []
 
+    # =========================================================================
+    # CATEGORY DEFINITIONS
+    # =========================================================================
+    
+    # arXiv categories (two-step)
+    arxiv_domains = {
+        "All arXiv": "",
+        "Computer Science": "cs",
+        "Physics": "physics",
+        "Mathematics": "math",
+        "Statistics": "stat",
+        "Quantitative Biology": "q-bio",
+        "Quantitative Finance": "q-fin",
+        "Electrical Engineering": "eess",
+        "Economics": "econ",
+    }
+    
+    arxiv_subcategories = {
+        "cs": {
+            "All Computer Science": "cs",
+            "Artificial Intelligence": "cs.AI",
+            "Machine Learning": "cs.LG",
+            "Computer Vision": "cs.CV",
+            "NLP / Computation and Language": "cs.CL",
+            "Robotics": "cs.RO",
+            "Neural and Evolutionary Computing": "cs.NE",
+            "Information Retrieval": "cs.IR",
+            "Cryptography and Security": "cs.CR",
+            "Databases": "cs.DB",
+            "Software Engineering": "cs.SE",
+            "Human-Computer Interaction": "cs.HC",
+            "Networking": "cs.NI",
+            "Distributed Computing": "cs.DC",
+            "Data Structures and Algorithms": "cs.DS",
+            "Programming Languages": "cs.PL",
+        },
+        "physics": {
+            "All Physics": "physics",
+            "Quantum Physics": "quant-ph",
+            "Astrophysics": "astro-ph",
+            "Condensed Matter": "cond-mat",
+            "High Energy Physics (Theory)": "hep-th",
+            "High Energy Physics (Experiment)": "hep-ex",
+            "General Relativity": "gr-qc",
+            "Mathematical Physics": "math-ph",
+            "Optics": "physics.optics",
+            "Computational Physics": "physics.comp-ph",
+            "Applied Physics": "physics.app-ph",
+            "Fluid Dynamics": "physics.flu-dyn",
+        },
+        "math": {
+            "All Mathematics": "math",
+            "Probability": "math.PR",
+            "Statistics Theory": "math.ST",
+            "Optimization and Control": "math.OC",
+            "Numerical Analysis": "math.NA",
+            "Combinatorics": "math.CO",
+            "Number Theory": "math.NT",
+            "Algebraic Geometry": "math.AG",
+            "Differential Geometry": "math.DG",
+            "Logic": "math.LO",
+        },
+        "stat": {
+            "All Statistics": "stat",
+            "Machine Learning": "stat.ML",
+            "Methodology": "stat.ME",
+            "Applications": "stat.AP",
+            "Computation": "stat.CO",
+            "Theory": "stat.TH",
+        },
+        "q-bio": {
+            "All Quantitative Biology": "q-bio",
+            "Genomics": "q-bio.GN",
+            "Neurons and Cognition": "q-bio.NC",
+            "Biomolecules": "q-bio.BM",
+            "Populations and Evolution": "q-bio.PE",
+            "Quantitative Methods": "q-bio.QM",
+        },
+        "q-fin": {
+            "All Quantitative Finance": "q-fin",
+            "Computational Finance": "q-fin.CP",
+            "Portfolio Management": "q-fin.PM",
+            "Risk Management": "q-fin.RM",
+            "Mathematical Finance": "q-fin.MF",
+            "Trading and Microstructure": "q-fin.TR",
+        },
+        "eess": {
+            "All Electrical Engineering": "eess",
+            "Signal Processing": "eess.SP",
+            "Image and Video Processing": "eess.IV",
+            "Audio and Speech Processing": "eess.AS",
+            "Systems and Control": "eess.SY",
+        },
+        "econ": {
+            "All Economics": "econ",
+            "Econometrics": "econ.EM",
+            "Theoretical Economics": "econ.TH",
+            "General Economics": "econ.GN",
+        },
+    }
+    
+    # Semantic Scholar fields
+    semantic_scholar_fields = {
+        "All Fields": None,
+        "Computer Science": "Computer Science",
+        "Physics": "Physics",
+        "Mathematics": "Mathematics",
+        "Biology": "Biology",
+        "Medicine": "Medicine",
+        "Chemistry": "Chemistry",
+        "Materials Science": "Materials Science",
+        "Environmental Science": "Environmental Science",
+        "Psychology": "Psychology",
+        "Economics": "Economics",
+        "Business": "Business",
+        "Engineering": "Engineering",
+        "Geology": "Geology",
+        "Geography": "Geography",
+        "Political Science": "Political Science",
+        "Sociology": "Sociology",
+        "History": "History",
+        "Philosophy": "Philosophy",
+        "Art": "Art",
+        "Law": "Law",
+    }
+
+    # =========================================================================
+    # SOURCE SELECTION
+    # =========================================================================
+    
+    st.markdown("### Select Data Source")
+    
+    source_col1, source_col2, source_col3 = st.columns(3)
+    
+    with source_col1:
+        arxiv_selected = st.checkbox("arXiv", value=True, help="Physics, Math, CS, Quantitative fields")
+    with source_col2:
+        semantic_selected = st.checkbox("Semantic Scholar", value=False, help="All sciences including Biology, Medicine, Chemistry")
+    with source_col3:
+        pubmed_selected = st.checkbox("PubMed", value=False, help="Biomedical and life sciences")
+    
+    if not (arxiv_selected or semantic_selected or pubmed_selected):
+        st.warning("Please select at least one data source")
+        arxiv_selected = True
+    
+    st.markdown("---")
+
+    # =========================================================================
+    # SEARCH FORM
+    # =========================================================================
+    
+    with st.form(key="search_form"):
+        query = st.text_input(
+            "Search Query", 
+            placeholder="transformer, CRISPR, cancer treatment, quantum computing, climate change...", 
+            label_visibility="collapsed"
+        )
+        
+        # Dynamic category selection based on source
+        if arxiv_selected and not (semantic_selected or pubmed_selected):
+            # arXiv only - show two-step category
+            col1, col2, col3 = st.columns([1, 1, 1])
+            
+            with col1:
+                selected_domain = st.selectbox("Domain", list(arxiv_domains.keys()), index=0)
+            
+            with col2:
+                if selected_domain == "All arXiv":
+                    subcategory_options = {"All Fields": ""}
+                else:
+                    domain_code = arxiv_domains[selected_domain]
+                    subcategory_options = arxiv_subcategories.get(domain_code, {"All": domain_code})
+                
+                selected_subcategory = st.selectbox("Subcategory", list(subcategory_options.keys()), index=0)
+                arxiv_category = subcategory_options[selected_subcategory]
+            
+            with col3:
+                num_results = st.selectbox("Results per source", [10, 20, 30, 50], index=1)
+            
+            semantic_field = None
+            
+        elif semantic_selected and not (arxiv_selected or pubmed_selected):
+            # Semantic Scholar only
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                selected_field = st.selectbox("Field of Study", list(semantic_scholar_fields.keys()), index=0)
+                semantic_field = semantic_scholar_fields[selected_field]
+            
+            with col2:
+                num_results = st.selectbox("Results", [10, 20, 30, 50], index=1)
+            
+            arxiv_category = ""
+            
+        else:
+            # Multiple sources - simplified
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                selected_field = st.selectbox(
+                    "Field (for Semantic Scholar)", 
+                    list(semantic_scholar_fields.keys()), 
+                    index=0,
+                    help="This filter applies to Semantic Scholar results"
+                )
+                semantic_field = semantic_scholar_fields[selected_field]
+            
+            with col2:
+                num_results = st.selectbox("Results per source", [10, 20, 30], index=1)
+            
+            arxiv_category = ""  # Search all arXiv when multi-source
+        
+        submit = st.form_submit_button("Search", use_container_width=True, type="primary")
+
+    # =========================================================================
+    # EXECUTE SEARCH
+    # =========================================================================
+    
+    if submit and query.strip():
+        st.session_state.search_results = []
+        
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        sources_to_search = []
+        if arxiv_selected:
+            sources_to_search.append("arXiv")
+        if semantic_selected:
+            sources_to_search.append("Semantic Scholar")
+        if pubmed_selected:
+            sources_to_search.append("PubMed")
+        
+        total_sources = len(sources_to_search)
+        current = 0
+        
+        all_results = []
+        
+        # Search arXiv
+        if arxiv_selected:
+            current += 1
+            progress_bar.progress(current / total_sources)
+            status_text.text(f"Searching arXiv... ({current}/{total_sources})")
+            
+            arxiv_results = search_arxiv(query, arxiv_category, num_results)
+            all_results.extend(arxiv_results)
+        
+        # Search Semantic Scholar
+        if semantic_selected:
+            current += 1
+            progress_bar.progress(current / total_sources)
+            status_text.text(f"Searching Semantic Scholar... ({current}/{total_sources})")
+            
+            ss_results = search_semantic_scholar(query, num_results, semantic_field)
+            all_results.extend(ss_results)
+        
+        # Search PubMed
+        if pubmed_selected:
+            current += 1
+            progress_bar.progress(current / total_sources)
+            status_text.text(f"Searching PubMed... ({current}/{total_sources})")
+            
+            pubmed_results = search_pubmed(query, num_results)
+            all_results.extend(pubmed_results)
+        
+        progress_bar.progress(1.0)
+        status_text.empty()
+        progress_bar.empty()
+        
+        st.session_state.search_results = all_results
+        
+        if all_results:
+            # Show summary by source
+            source_counts = {}
+            for r in all_results:
+                src = r.get('source', 'Unknown')
+                source_counts[src] = source_counts.get(src, 0) + 1
+            
+            summary_parts = [f"{count} from {src}" for src, count in source_counts.items()]
+            st.success(f"Found {len(all_results)} papers: {', '.join(summary_parts)}")
+        else:
+            st.warning("No papers found. Try different keywords or sources.")
+
+    # =========================================================================
+    # DISPLAY RESULTS
+    # =========================================================================
+    
     if st.session_state.search_results:
+        # Get saved paper IDs
         try:
             saved_arxiv_ids = {p.arxiv_id for p in db.get_all_papers() if hasattr(p, 'arxiv_id')}
         except:
@@ -1852,53 +2275,101 @@ elif page == "Search":
         
         saved_arxiv_ids = saved_arxiv_ids.union(st.session_state.saved_papers)
         
-        for i, paper in enumerate(st.session_state.search_results):
-            arxiv_id = paper['arxiv_id']
+        # Source filter
+        sources_in_results = list(set(r.get('source', 'Unknown') for r in st.session_state.search_results))
+        if len(sources_in_results) > 1:
+            filter_source = st.selectbox(
+                "Filter by source",
+                ["All Sources"] + sources_in_results,
+                index=0
+            )
+        else:
+            filter_source = "All Sources"
+        
+        # Filter results
+        filtered_results = st.session_state.search_results
+        if filter_source != "All Sources":
+            filtered_results = [r for r in filtered_results if r.get('source') == filter_source]
+        
+        st.markdown(f"**Showing {len(filtered_results)} papers**")
+        st.markdown("---")
+        
+        # Display papers
+        for i, paper in enumerate(filtered_results):
+            paper_id = paper.get('arxiv_id', paper.get('paper_id', f'paper_{i}'))
             title = clean_text(paper['title'])
             authors = paper['authors']
-            summary = clean_text(paper['summary'])[:380] + "..."
-            pdf_url = paper['pdf_url']
-            abs_url = paper['abs_url']
+            summary = clean_text(paper.get('summary', ''))[:400]
+            if len(paper.get('summary', '')) > 400:
+                summary += "..."
+            pdf_url = paper.get('pdf_url', '#')
+            abs_url = paper.get('abs_url', '#')
+            source = paper.get('source', 'Unknown')
+            venue = paper.get('venue', '')
+            citations = paper.get('citations', None)
+            category = paper.get('category', 'Unknown')
             
-            already_saved = arxiv_id in saved_arxiv_ids
+            already_saved = paper_id in saved_arxiv_ids
+            
+            # Source badge color
+            source_colors = {
+                'arXiv': '#b31b1b',
+                'Semantic Scholar': '#1857b6',
+                'PubMed': '#326599'
+            }
+            source_color = source_colors.get(source, '#64748b')
             
             with st.container():
                 st.markdown(f"""
-                <div class="paper-card-pro" style="border-left: 3px solid {'#10b981' if already_saved else '#3b82f6'};">
-                    <h3 style="margin:12px 0; color:#e2e8f0; font-size:18px; font-weight: 600;">{title}</h3>
-                    <p style="color:#94a3b8; font-size: 14px;">{authors}</p>
-                    <p style="color:#cbd5e1; font-size: 14px; line-height: 1.6;">{summary}</p>
+                <div class="paper-card-pro" style="border-left: 3px solid {'#10b981' if already_saved else source_color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="background: {source_color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            {source}
+                        </span>
+                        <span style="color: #64748b; font-size: 12px;">
+                            {category} {f'• {citations:,} citations' if citations else ''} {f'• {venue}' if venue else ''}
+                        </span>
+                    </div>
+                    <h3 style="margin: 12px 0; color: #e2e8f0; font-size: 18px; font-weight: 600;">{title}</h3>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 8px;">{authors}</p>
+                    <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">{summary}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
                 col1, col2, col3 = st.columns([1, 1, 1])
+                
                 with col1:
-                    st.link_button("View PDF", pdf_url, use_container_width=True)
+                    if pdf_url and pdf_url != '#':
+                        st.link_button("View Paper", pdf_url, use_container_width=True)
+                    else:
+                        st.button("No PDF Available", disabled=True, use_container_width=True)
+                
                 with col2:
-                    st.link_button("arXiv Page", abs_url, use_container_width=True)
+                    st.link_button(f"View on {source}", abs_url, use_container_width=True)
+                
                 with col3:
                     if already_saved:
                         st.success("In Library")
                     else:
-                        if st.button("Add to Library", key=f"save_{arxiv_id}_{i}", use_container_width=True):
+                        if st.button("Add to Library", key=f"save_{paper_id}_{i}", use_container_width=True):
                             try:
                                 new_paper = PaperRecord(
-                                    arxiv_id=arxiv_id,
+                                    arxiv_id=paper_id,
                                     title=paper['title'],
                                     authors=paper['authors'],
-                                    summary=paper['summary'],
-                                    pdf_url=paper['pdf_url'],
-                                    abs_url=paper['abs_url'],
-                                    primary_category=paper['category'],
-                                    published=paper['published'],
-                                    relevance_score=0.99,
+                                    summary=paper.get('summary', ''),
+                                    pdf_url=paper.get('pdf_url', ''),
+                                    abs_url=paper.get('abs_url', ''),
+                                    primary_category=paper.get('category', 'Unknown'),
+                                    published=paper.get('published', datetime.now()),
+                                    relevance_score=0.95,
                                     is_saved=True
                                 )
                                 
                                 db.session.add(new_paper)
                                 db.session.commit()
                                 
-                                st.session_state.saved_papers.add(arxiv_id)
+                                st.session_state.saved_papers.add(paper_id)
                                 st.session_state.just_saved = title[:50] + "..."
                                 
                                 st.rerun()
@@ -1912,8 +2383,15 @@ elif page == "Search":
     elif not submit:
         st.markdown("""
         <div class="empty-state-pro">
-            <h3>Search Scientific Literature</h3>
-            <p>Access papers from Physics, Biology, Mathematics, Finance, AI, and more.</p>
+            <h3>Search Scientific Literature Worldwide</h3>
+            <p style="margin-top: 12px;">
+                <strong>arXiv:</strong> Physics, Mathematics, Computer Science, Statistics<br>
+                <strong>Semantic Scholar:</strong> All sciences including Biology, Medicine, Chemistry<br>
+                <strong>PubMed:</strong> Biomedical and Life Sciences
+            </p>
+            <p style="margin-top: 16px; color: #64748b;">
+                Select your data sources above and enter a search query.
+            </p>
         </div>
         """, unsafe_allow_html=True)
     
