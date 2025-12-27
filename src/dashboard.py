@@ -11,8 +11,6 @@ import sys
 from pathlib import Path
 import re
 
-# Add this line TEMPORARILY to clear cache - remove after one run
-st.cache_resource.clear()
 
 # =============================================================================
 # PATH SETUP
