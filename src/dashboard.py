@@ -11,6 +11,9 @@ import sys
 from pathlib import Path
 import re
 
+# Add this line TEMPORARILY to clear cache - remove after one run
+st.cache_resource.clear()
+
 # =============================================================================
 # PATH SETUP
 # =============================================================================
@@ -2180,21 +2183,34 @@ elif page == "Model":
             
             if result.get('success'):
                 st.balloons()
+                
+                # Show metrics
                 st.success(f"""
                 **Training Complete**
                 - Accuracy: {result['accuracy']:.1%}
                 - Precision: {result['precision']:.1%}
                 - F1 Score: {result['f1']:.1%}
                 - Training samples: {result['samples']}
+                - Evaluation method: {result.get('evaluation_method', 'unknown')}
                 """)
-
-                # Add the warning here if model may be unreliable
-                if labeled_count < 20:
+                
+                # Show reliability warning
+                if not result.get('is_reliable', False):
                     st.warning(f"""
-                    **Model may be unreliable** — You have {labeled_count} labeled papers.
+                    **⚠️ Model may be unreliable**
                     
-                    For best results, label at least **20 papers** (10 relevant + 10 not relevant).
+                    You have **{result['samples']}** labeled papers ({result['positive_samples']} relevant, {result['negative_samples']} not relevant).
+                    
+                    For reliable results, you need:
+                    - At least **20 labeled papers** total
+                    - At least **5 relevant** papers
+                    - At least **5 not relevant** papers
+                    
+                    Current accuracy ({result['accuracy']:.0%}) may not reflect real-world performance.
                     """)
+                else:
+                    st.info("✓ Model has sufficient training data for reliable predictions.")
+                
                 st.rerun()
             else:
                 st.error(f"Training failed: {result.get('error')}")
