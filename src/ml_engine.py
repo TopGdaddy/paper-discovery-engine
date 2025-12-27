@@ -174,14 +174,6 @@ class PaperMLEngine:
                 'training_accuracy': accuracy_score(y, y_pred_train),  # Keep for reference
                 'trained_at': datetime.utcnow()
             }
-
-            # After showing metrics
-                if labeled_count < 20:
-                    st.warning(f"""
-                    **Model may be unreliable** — You have {labeled_count} labeled papers.
-                    
-                    For best results, label at least **20 papers** (10 relevant + 10 not relevant).
-                    """)
             
             feature_names = self.vectorizer.get_feature_names_out()
             coefficients = self.model.coef_[0]
