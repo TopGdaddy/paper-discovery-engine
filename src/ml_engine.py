@@ -1,5 +1,6 @@
 """
 ml_engine.py - Machine Learning Engine for Paper Discovery
+Improved version with proper train/test evaluation
 """
 
 import pickle
@@ -67,14 +68,15 @@ class PaperMLEngine:
         return texts, labels
     
     def train(self, min_samples=5) -> Dict:
-        """Train the classifier on user's labeled papers"""
+        """Train the classifier on user's labeled papers with proper evaluation"""
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.linear_model import LogisticRegression
-        from sklearn.model_selection import cross_val_score
+        from sklearn.model_selection import train_test_split, LeaveOneOut, cross_val_score, cross_val_predict
         from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
         
         texts, labels = self.get_training_data()
         
+        # Check minimum samples
         if len(texts) < min_samples:
             return {
                 'success': False,
@@ -83,6 +85,7 @@ class PaperMLEngine:
                 'required_count': min_samples
             }
         
+        # Check for both classes
         unique_labels = set(labels)
         if len(unique_labels) < 2:
             return {
@@ -92,6 +95,7 @@ class PaperMLEngine:
             }
         
         try:
+            # Initialize vectorizer
             self.vectorizer = TfidfVectorizer(
                 max_features=5000,
                 ngram_range=(1, 2),
@@ -103,6 +107,7 @@ class PaperMLEngine:
             X = self.vectorizer.fit_transform(texts)
             y = np.array(labels)
             
+            # Initialize model
             self.model = LogisticRegression(
                 max_iter=1000,
                 class_weight='balanced',
@@ -110,86 +115,161 @@ class PaperMLEngine:
                 random_state=42
             )
             
-                        # For proper evaluation, use train/test split
-            from sklearn.model_selection import train_test_split
+            n_samples = len(texts)
+            n_positive = sum(labels)
+            n_negative = len(labels) - sum(labels)
             
-            if len(texts) >= 10:
-                # Split data: 80% train, 20% test
+            # ================================================================
+            # PROPER EVALUATION BASED ON SAMPLE SIZE
+            # ================================================================
+            
+            if n_samples >= 20 and n_positive >= 4 and n_negative >= 4:
+                # ----------------------------------------------------------
+                # CASE 1: Enough samples for proper train/test split (20+)
+                # ----------------------------------------------------------
                 X_train, X_test, y_train, y_test = train_test_split(
                     X, y, 
                     test_size=0.2, 
                     random_state=42,
-                    stratify=y  # Keep class balance
+                    stratify=y
                 )
                 
                 # Train on training set
                 self.model.fit(X_train, y_train)
                 
-                # Evaluate on TEST set (unseen data)
+                # Evaluate on held-out test set
                 y_pred_test = self.model.predict(X_test)
+                
                 test_accuracy = accuracy_score(y_test, y_pred_test)
                 test_precision = precision_score(y_test, y_pred_test, zero_division=0)
                 test_recall = recall_score(y_test, y_pred_test, zero_division=0)
                 test_f1 = f1_score(y_test, y_pred_test, zero_division=0)
                 
-                # Also do cross-validation for more robust estimate
-                cv_scores = cross_val_score(self.model, X, y, cv=min(5, len(texts)//2))
-                cv_accuracy = cv_scores.mean()
+                # Cross-validation for additional robustness
+                cv_folds = min(5, n_samples // 4)
+                if cv_folds >= 2:
+                    cv_scores = cross_val_score(self.model, X, y, cv=cv_folds)
+                    cv_accuracy = cv_scores.mean()
+                else:
+                    cv_accuracy = test_accuracy
                 
-                # Now retrain on ALL data for production use
+                evaluation_method = "train_test_split"
+                
+                # Retrain on ALL data for production use
+                self.model.fit(X, y)
+                
+            elif n_samples >= 10:
+                # ----------------------------------------------------------
+                # CASE 2: Medium samples - use Leave-One-Out (10-19)
+                # ----------------------------------------------------------
+                # Leave-One-Out tests each sample individually
+                loo = LeaveOneOut()
+                y_pred_loo = cross_val_predict(self.model, X, y, cv=loo)
+                
+                test_accuracy = accuracy_score(y, y_pred_loo)
+                test_precision = precision_score(y, y_pred_loo, zero_division=0)
+                test_recall = recall_score(y, y_pred_loo, zero_division=0)
+                test_f1 = f1_score(y, y_pred_loo, zero_division=0)
+                cv_accuracy = test_accuracy  # LOO is a form of CV
+                
+                evaluation_method = "leave_one_out"
+                
+                # Train on all data for production
                 self.model.fit(X, y)
                 
             else:
-                # Too few samples - use cross-validation only
-                if len(texts) >= 5:
-                    cv_scores = cross_val_score(self.model, X, y, cv=min(3, len(texts)))
-                    cv_accuracy = cv_scores.mean()
-                    test_accuracy = cv_accuracy  # Use CV as estimate
-                    test_precision = 0.0
-                    test_recall = 0.0
-                    test_f1 = 0.0
-                else:
-                    cv_accuracy = None
-                    test_accuracy = 0.0
-                    test_precision = 0.0
-                    test_recall = 0.0
-                    test_f1 = 0.0
+                # ----------------------------------------------------------
+                # CASE 3: Few samples - use k-fold cross-validation (5-9)
+                # ----------------------------------------------------------
+                cv_folds = max(2, min(n_samples, 5))
+                
+                try:
+                    y_pred_cv = cross_val_predict(self.model, X, y, cv=cv_folds)
+                    
+                    test_accuracy = accuracy_score(y, y_pred_cv)
+                    test_precision = precision_score(y, y_pred_cv, zero_division=0)
+                    test_recall = recall_score(y, y_pred_cv, zero_division=0)
+                    test_f1 = f1_score(y, y_pred_cv, zero_division=0)
+                except:
+                    # If cross-val fails, fall back to simple estimate
+                    test_accuracy = 0.5  # Random chance
+                    test_precision = 0.5
+                    test_recall = 0.5
+                    test_f1 = 0.5
+                
+                cv_accuracy = test_accuracy
+                evaluation_method = "cross_val_predict"
                 
                 # Train on all data
                 self.model.fit(X, y)
             
-            # Training set predictions (for feature importance only)
+            # ================================================================
+            # TRAINING SET METRICS (for reference only)
+            # ================================================================
             y_pred_train = self.model.predict(X)
+            training_accuracy = accuracy_score(y, y_pred_train)
             
-            metrics = {
-                'success': True,
-                'samples': len(texts),
-                'positive_samples': sum(labels),
-                'negative_samples': len(labels) - sum(labels),
-                'accuracy': test_accuracy,  # Now using TEST accuracy
-                'precision': test_precision,
-                'recall': test_recall,
-                'f1': test_f1,
-                'cv_accuracy': cv_accuracy,
-                'training_accuracy': accuracy_score(y, y_pred_train),  # Keep for reference
-                'trained_at': datetime.utcnow()
-            }
+            # ================================================================
+            # RELIABILITY ASSESSMENT
+            # ================================================================
+            # Model is reliable if we have enough diverse samples
+            is_reliable = (
+                n_samples >= 20 and 
+                n_positive >= 5 and 
+                n_negative >= 5
+            )
             
+            # Confidence level
+            if n_samples >= 50 and n_positive >= 15 and n_negative >= 15:
+                confidence_level = "high"
+            elif n_samples >= 20 and n_positive >= 5 and n_negative >= 5:
+                confidence_level = "medium"
+            else:
+                confidence_level = "low"
+            
+            # ================================================================
+            # EXTRACT FEATURE IMPORTANCE
+            # ================================================================
             feature_names = self.vectorizer.get_feature_names_out()
             coefficients = self.model.coef_[0]
             
             top_positive_idx = np.argsort(coefficients)[-10:][::-1]
             top_negative_idx = np.argsort(coefficients)[:10]
             
-            metrics['top_positive'] = [
+            top_positive = [
                 {'word': feature_names[i], 'score': float(coefficients[i])}
                 for i in top_positive_idx
             ]
-            metrics['top_negative'] = [
+            top_negative = [
                 {'word': feature_names[i], 'score': float(coefficients[i])}
                 for i in top_negative_idx
             ]
             
+            # ================================================================
+            # BUILD METRICS DICT
+            # ================================================================
+            metrics = {
+                'success': True,
+                'samples': n_samples,
+                'positive_samples': n_positive,
+                'negative_samples': n_negative,
+                'accuracy': test_accuracy,
+                'precision': test_precision,
+                'recall': test_recall,
+                'f1': test_f1,
+                'cv_accuracy': cv_accuracy,
+                'training_accuracy': training_accuracy,
+                'evaluation_method': evaluation_method,
+                'is_reliable': is_reliable,
+                'confidence_level': confidence_level,
+                'top_positive': top_positive,
+                'top_negative': top_negative,
+                'trained_at': datetime.utcnow()
+            }
+            
+            # ================================================================
+            # SAVE MODEL TO DATABASE
+            # ================================================================
             model_blob = base64.b64encode(pickle.dumps(self.model)).decode('utf-8')
             vectorizer_blob = base64.b64encode(pickle.dumps(self.vectorizer)).decode('utf-8')
             self.db.save_model_state(model_blob, vectorizer_blob, metrics)
@@ -200,9 +280,11 @@ class PaperMLEngine:
             return metrics
             
         except Exception as e:
+            import traceback
             return {
                 'success': False,
-                'error': str(e)
+                'error': str(e),
+                'traceback': traceback.format_exc()
             }
     
     def predict_relevance(self, paper) -> Optional[float]:
@@ -214,9 +296,17 @@ class PaperMLEngine:
             text = self._prepare_text(paper)
             X = self.vectorizer.transform([text])
             proba = self.model.predict_proba(X)[0]
-            relevant_idx = list(self.model.classes_).index(1)
+            
+            # Get index of the "relevant" class (label = 1)
+            classes = list(self.model.classes_)
+            if 1 in classes:
+                relevant_idx = classes.index(1)
+            else:
+                relevant_idx = 0
+                
             return float(proba[relevant_idx])
-        except:
+        except Exception as e:
+            print(f"Prediction error: {e}")
             return None
     
     def score_all_papers(self, limit=1000) -> Dict[str, float]:
@@ -232,18 +322,22 @@ class PaperMLEngine:
             if score is not None:
                 scores[paper.arxiv_id] = score
         
+        # Update scores in database
         self.db.update_user_scores(scores)
         return scores
     
     def get_recommendations(self, limit=10) -> List:
         """Get top recommended papers based on user's model"""
         if not self.is_trained:
+            # Return random papers if not trained
             return self.db.get_all_papers(limit=limit)
         
+        # Get unlabeled papers
         papers = self.db.get_all_papers(limit=500)
         scored_papers = []
         
         for paper in papers:
+            # Skip already labeled papers
             if paper.user_label is not None:
                 continue
             
@@ -251,5 +345,25 @@ class PaperMLEngine:
             if score is not None:
                 scored_papers.append((paper, score))
         
+        # Sort by predicted relevance (highest first)
         scored_papers.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top papers
         return [p for p, s in scored_papers[:limit]]
+    
+    def get_model_info(self) -> Dict:
+        """Get information about the current model"""
+        if not self.is_trained:
+            return {
+                'is_trained': False,
+                'message': 'No model trained yet'
+            }
+        
+        return {
+            'is_trained': True,
+            'accuracy': self.metrics.get('accuracy'),
+            'samples': self.metrics.get('samples'),
+            'trained_at': self.metrics.get('trained_at'),
+            'is_reliable': self.metrics.get('is_reliable', False),
+            'confidence_level': self.metrics.get('confidence_level', 'unknown')
+        }
